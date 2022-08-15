@@ -13,4 +13,4 @@ window.addEventListener("DOMContentLoaded", () => {
     replaceText(`${dependency}-version`, process.versions[dependency]);
   }
 });
-alert("It Worked!"); // Remove this line once you confirm it worked
+// alert("It Worked!"); // Remove this line once you confirm it worked

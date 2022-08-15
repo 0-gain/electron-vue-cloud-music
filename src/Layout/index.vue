@@ -1,16 +1,16 @@
 <template>
   <div id="wrapper">
-    <CloudHeader class="header" />
-    <Sidebar class="sidebar-container" />
-    <div class="main-container">
-      <app-main />
-    </div>
-    <Footer class="footer" />
+    <CloudHeader />
+    <Sidebar/>
+    <app-main />
+    <!-- <Footer class="footer" /> -->
+    <!-- <music-detail-card class="musicDetailCard"></music-detail-card> -->
   </div>
 </template>
 
 <script>
 import { Sidebar, CloudHeader, AppMain, Footer } from "./components";
+import MusicDetailCard from "@/components/Test";
 export default {
   name: "Layout",
   components: {
@@ -18,15 +18,13 @@ export default {
     CloudHeader,
     AppMain,
     Footer,
+    MusicDetailCard,
   },
 };
 </script>
 
 <style lang="less">
 #wrapper {
-  position: relative;
-  height: 100%;
-  width: 100%;
   &:after {
     content: "";
     display: table;
@@ -38,7 +36,7 @@ export default {
     top: 0;
     left: 0;
     right: 0;
-    z-index: 9999;
+    z-index: 99999;
   }
   .sidebar-container {
     position: fixed;
@@ -51,11 +49,16 @@ export default {
   }
   .main-container {
     position: relative;
-    margin-left: 200px;
     margin-top: 60px;
     float: left;
     height: 100%;
     width: 100%;
+    padding-bottom: 100px;
+    &:after {
+      content: "";
+      display: table;
+      clear: both;
+    }
   }
   .footer {
     position: fixed;
@@ -66,7 +69,7 @@ export default {
     right: 0;
     z-index: 99999;
     background-color: #fff;
-    border-top: 1px solid rgba(144,147,153,.3);
+    border-top: 1px solid rgba(144, 147, 153, 0.3);
   }
 }
 </style>

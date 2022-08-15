@@ -2,7 +2,7 @@ let playListRoutes = [
   {
     path: "/likeMusic",
     name: "LikeMusic",
-    component: () => import("@/pages/Playlist/LikeMusic.vue"),
+    component: () => import("@/pages/CreatePlayList/LikeMusic.vue"),
     meta: { title: "我喜欢的音乐", icon: "icon-heart-line" },
   },
 ];

@@ -1,0 +1,55 @@
+element.style {
+  margin: 0 !important;
+}
+
+.el-loading-spinner {
+  margin-top: 20px !important;
+}
+.el-icon-loading {
+  color: #909399 !important;
+}
+.el-loading-text {
+  color: #909399 !important;
+  font-size: 20px !important;
+}
+
+.el-pager > li {
+  min-width: 25px !important;
+  padding: 0;
+  margin: 0 5px !important;
+  height: 25px;
+  line-height: 25px;
+  background-color: transparent;
+  border: 1px solid #dcdfe6;
+  font-size: 12px;
+  box-sizing: border-box;
+  border-radius: 5px !important;
+  color: #666666;
+  font-weight: normal;
+}
+.el-pager > li:not(.disabled).active {
+  color: #fff;
+  background-color: rgb(236, 65, 65) !important;
+}
+.el-pager > li:not(.disabled, .active):hover {
+  color: #666666 !important;
+  background-color: #efefef !important;
+}
+.el-pager > .more::before {
+  line-height: 20px;
+}
+
+.el-pagination > button {
+  min-width: 25px !important;
+  height: 25px;
+  line-height: 25px;
+  border: 1px solid #dcdfe6;
+  padding: 0;
+  border-radius: 5px;
+}
+.el-pagination > button > i {
+  padding: 0;
+}
+.el-pagination > button:not(:disabled):hover {
+  color: #666666 !important;
+}

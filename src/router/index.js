@@ -3,15 +3,14 @@ import VueRouter from "vue-router";
 
 Vue.use(VueRouter);
 
-
-
 import { discover } from "./modules/discover";
 import { video } from "./modules/video";
-import {follow} from './modules/follow';
+import { follow } from "./modules/follow";
 import { livestream } from "./modules/Livestream";
 import { fm } from "./modules/fm";
 import { myMusicRoutes } from "./modules/myMusic";
 import { playListRoutes } from "./modules/playList";
+import { searchRoutes } from "./modules/search";
 // 引入Layout
 import Layout from "@/Layout";
 const router = new VueRouter({
@@ -27,10 +26,45 @@ const router = new VueRouter({
         ...livestream,
         ...fm,
         ...myMusicRoutes,
-        ...playListRoutes
+        ...playListRoutes,
+        ...searchRoutes,
+        {
+          // 歌单详情
+          path: "/playListDetail",
+          name: "PlayList",
+          component: () => import("@/pages/PlayListDetail/PlaylistDetail.vue"),
+        },
+        {
+          // 歌手详情
+          path: "/singerDetail",
+          component: () => import("@/pages/SingerDetail/SingerIndex.vue"),
+        },
+        {
+          path: "/album",
+          name: "album",
+          component: () => import("@/pages/SingerDetail/Children/album.vue"),
+        },
+        {
+          // 个人中心
+          path: "/person",
+          component: () => import("@/pages/Person"),
+        },
       ],
     },
+
+    {
+      // 展开音乐详情
+      path: "/playListCardDetail",
+      name: "PlayListCardDetail",
+      component: () => import("@/pages/PlayListDetail/PlaylistCardDetail.vue"),
+    },
+    {
+      // mv详情
+      path: "/mvDetail",
+      name: "MvDetail",
+      component: () => import("@/pages/MvDetail"),
+      meta: { hidden: true },
+    },
   ],
-  
 });
 export default router;

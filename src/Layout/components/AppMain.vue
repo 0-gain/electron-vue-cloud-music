@@ -1,7 +1,19 @@
 <template>
   <section class="app-main">
     <!-- <component :is="currentTabComponent"></component> -->
-    <router-view></router-view>
+    <!-- exclude: 组件名 -->
+    <keep-alive
+      :exclude="[
+        'PlaylistDetail',
+        'SingerDetail',
+        'Person',
+        'album',
+        'MvDetail',
+        'SearchList',
+      ]"
+    >
+      <router-view v-if="showRouter"></router-view>
+    </keep-alive>
   </section>
 </template>
 
@@ -11,24 +23,30 @@ export default {
   name: "AppMain",
   data() {
     return {
-      // currentTabComponent: Discover,
+      showRouter: true,
+    };
+  },
+  provide() {
+    return {
+      reload: this.reload,
     };
   },
   methods: {
-    
-  },
-  computed: {
-    key() {
-      console.log(this.$route.path);
-      return this.$route.path;
+    // 实现刷新
+    reload() {
+      this.showRouter = false;
+      this.$nextTick(() => {
+        this.showRouter = true;
+      });
     },
-  },
-  mounted() {
-    /* this.$bus.$on("route", (data) => {
-      this.currentTabComponent = data.component;
-    }); */
   },
 };
 </script>
 
-<style></style>
+<style lang="less" scoped>
+.app-main {
+  margin-left: 200px;
+  margin-top: 60px;
+  box-sizing: border-box;
+}
+</style>

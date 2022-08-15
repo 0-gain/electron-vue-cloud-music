@@ -26,6 +26,11 @@ Vue.filter("toDate", function (val, format) {
   return moment(val).format(format || "YYYY-MM-DD");
 });
 
+Vue.filter("timeStrFormat", function (val, format) {
+  return moment(val).format(format || "HH:mm");
+});
+
+// 秒和毫秒
 Vue.filter("time", function (val, format) {
   return moment(val).format(format || "mm:ss");
 });

@@ -1,5 +1,5 @@
 <template>
-  <div>
+  <div class="sideBar">
     <el-scrollbar wrap-class="scrollbar-wrapper">
       <el-menu
         default-active="0"
@@ -47,7 +47,7 @@
 
 <script>
 import { myMusicMap } from "@/router/modules/myMusic";
-import {playListMap} from "@/router/modules/playList"
+import { playListMap } from "@/router/modules/playList";
 export default {
   name: "Sidebar",
   data() {
@@ -59,7 +59,7 @@ export default {
   },
   computed: {
     routes() {
-      let arr = this.$router.options.routes[0].children;
+      let arr = this.$router.options.routes[0].children.slice(0,7);
       let newArr = [];
       arr.forEach((element) => {
         if (!element.meta.icon) {
@@ -79,7 +79,15 @@ export default {
 </script>
 
 <style lang="less">
-div {
+.sideBar {
+  position: fixed;
+  left: 0;
+  top: 60px;
+  height: 100%;
+  border-right: 1px solid #e5e5e6;
+  box-sizing: border-box;
+  width: 200px;
+  overflow: hidden;
   .el-scrollbar {
     width: 200px;
     height: 100%;

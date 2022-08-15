@@ -25,7 +25,9 @@ export function reqQr_key() {
     可选参数: qrimg 传入后会额外返回二维码图片 base64 编码
 */
 export const reqQr_create = (key) =>
-  request.get("/login/qr/create", { params: { key,qrimg:true, _: new Date().getTime() } });
+  request.get("/login/qr/create", {
+    params: { key, qrimg: true, _: new Date().getTime() },
+  });
 
 // 3.二维码检测扫码状态接口
 /* 
@@ -35,33 +37,52 @@ export const reqQr_create = (key) =>
 export const reqQr_checkStatus = (key) =>
   request.get("/login/qr/check", { params: { key, _: new Date().getTime() } });
 
-
 // 登录状态
-export const loginStatus = (cookie) => request.get('/login/status',{params:{
-  cookie,
-  _: new Date().getTime()
-}})
+export const loginStatus = (cookie) =>
+  request.get("/login/status", {
+    params: {
+      cookie,
+      _: new Date().getTime(),
+    },
+  });
 
 // 用户详情
-export const reqUser_detail = (uid) => request.get('/user/detail',{
-  params:{
-    uid,
-    _: new Date().getTime()
-  }
-})
+export const reqUser_detail = (uid) =>
+  request.get("/user/detail", {
+    params: {
+      uid,
+      _: new Date().getTime(),
+    },
+  });
 
 // 获取用户信息，歌单，收藏，mv,dj数量
-export const reqSubcount = (uid) =>request.get('/user/subcount',{
-  params:{
-    uid,
-    _: new Date().getTime()
-  }
-})
+export const reqSubcount = (uid) =>
+  request.get("/user/subcount", {
+    params: {
+      uid,
+      _: new Date().getTime(),
+    },
+  });
 
 // 获取用户账户信息
-export const reqAccount = (uid) => request.get('/user/account',{
-  params:{
-    uid,
-    _: new Date().getTime()
-  }
-})
+export const reqAccount = (uid) =>
+  request.get("/user/account", {
+    params: {
+      uid,
+      _: new Date().getTime(),
+    },
+  });
+
+// 获取动态信息
+export const reqEvent = (pagesize, lasttime) =>
+  request.get("/event", {
+    params: {
+      pagesize,
+      lasttime,
+      _: new Date().getTime(),
+    },
+  });
+
+// 喜欢音乐列表
+export const reqLikeList = (uid) =>
+  request.get("/likelist", { parmas: { uid, _: new Date().getTime() } });

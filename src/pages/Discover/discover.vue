@@ -1,7 +1,11 @@
 <template>
-  <div class="main">
-    <home-nav  @clickBarItem="clickBarItem" :navBarData = 'navBarData' v-show="isShowNav"/>
-    <router-view class="discover-content" :visible.sync="isShowNav"></router-view>
+  <div class="discoverWrap clearfix" ref="discoverContent">
+    <home-nav @clickBarItem="clickBarItem" :navBarData="navBarData" />
+    <div class="discover-content">
+      <keep-alive>
+        <router-view class="discover-router"></router-view>
+      </keep-alive>
+    </div>
   </div>
 </template>
 
@@ -13,36 +17,49 @@ export default {
     return {
       navBarData: [
         { name: "个性推荐", path: "/discover/recommend" },
-        { name: "专属定制", path: "/discover/customize" },
         { name: "歌单", path: "/discover/musicList" },
         { name: "排行榜", path: "/discover/rank" },
         { name: "歌手", path: "/discover/singer" },
         { name: "最新音乐", path: "/discover/newMusic" },
       ],
-      isShowNav:true,//是否显示导航
-    }
+      isShowNav: true, //是否显示导航
+    };
+  },
+
+  mounted() {
+    this.$bus.$on("scrollTop", this.changeScroll);
   },
   methods: {
-    clickBarItem(path){
-      this.$router.push(path)
+    // nav数据
+    clickBarItem({path}) {
+      this.$router.push(path);
     },
-    visible(val){
-      this.isShowNav = val
-    }
-  },
-  mounted() {
-    // this.$store.dispatch("discover/getInfo");
+
+    // 全局事件总线，滚动顶部
+    changeScroll(scroll) {
+      this.$refs.discoverContent.scrollTo({
+        top:scroll,
+        behavior:'smooth'
+      })
+    },
   },
   components: {
-    HomeNav
+    HomeNav,
   },
 };
 </script>
 
-<style lang="less" scope>
-.main {
-  width: 75%;
-  margin-left: 3%;
-  box-sizing: border-box;
+<style scoped>
+.discoverWrap {
+  display: flex;
+  flex-direction: column;
+  align-content: center;
+  flex-wrap: wrap;
+  margin-top: 120px;
+  overflow-y: scroll;
+  height: calc(100vh - 190px);
+}
+.discover-content {
+  width: calc(75vw);
 }
 </style>

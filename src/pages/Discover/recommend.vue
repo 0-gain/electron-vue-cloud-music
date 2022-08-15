@@ -1,6 +1,6 @@
 <template>
   <div>
-    <div class="content" v-show="!isShowPlayListDetail">
+    <div class="content" ref="content">
       <Carousel />
 
       <!-- 推荐歌单 -->
@@ -9,68 +9,28 @@
           <h3>推荐歌单</h3>
           <i class="iconfont">&#xe743;</i>
         </div>
-        <div class="menu-content">
-          <ul>
-            <li>
-              <a href="javascript:;">
-                <img src="" alt="" />
-              </a>
-              <i
-                class="icon"
-                :style="{
-                  background: 'url(' + videoBg + ') no-repeat center top',
-                  'background-size': '100% 100%',
-                }"
-              ></i>
-              <p class="name">每日歌曲推荐</p>
-            </li>
-            <li
-              v-for="item in menuInfo"
-              :key="item.id"
-              @click="showPlaylistDetail(item.id)"
-            >
-              <a
-                href="javascript:;"
-                @mouseenter="showIcon(item)"
-                @mouseleave="hiddenIcon(item)"
-              >
-                <img :src="item.picUrl" alt="" />
-              </a>
-              <i
-                v-if="item.showIcon"
-                class="icon"
-                :style="{
-                  background: 'url(' + videoBg + ') no-repeat center top',
-                  'background-size': '100% 100%',
-                }"
-              ></i>
-              <div class="counts">
-                <i class="iconfont">&#xea6d;</i>
-                <span>{{ item.playCount | numberFormat }}</span>
-              </div>
-              <p class="name">{{ item.name }}</p>
-            </li>
-          </ul>
-        </div>
+        <List-item
+          :listData="menuInfo"
+          :isShowIcon="false"
+          @changeRoute="goRoutePlaylist"
+        />
       </div>
 
       <!-- 独家放送 -->
-      <div class="privateContent">
-        <div class="title clearfix">
-          <h3>{{ privateContentInfo.name }}</h3>
-          <i class="iconfont">&#xe743;</i>
+      <div class="private-content">
+        <div
+          class="title clearfix"
+          @click="$router.push({ path: '/video/privateContentList' })"
+        >
+          <h3>独家放送</h3>
+          <i class="iconfont icon-arrow-right"></i>
         </div>
-        <div class="content">
-          <ul>
-            <li v-for="item in privateContentInfo.result" :key="item.id">
-              <a href="javascript:;">
-                <img :src="item.sPicUrl" alt="" />
-              </a>
-              <i class="iconfont">&#xe607;</i>
-              <p class="msg">{{ item.name }}</p>
-            </li>
-          </ul>
-        </div>
+        <List-item
+          :listData="privateContentInfo"
+          :isShowIcon="true"
+          @changeRoute="goRouteMvDetail"
+          :isShowCounts="false"
+        />
       </div>
 
       <!-- 最新音乐 -->
@@ -80,15 +40,8 @@
           <i class="iconfont">&#xe743;</i>
         </div>
         <div class="wrapper">
-          <div
-            class="content"
-            @mouseenter="currentId = item.id"
-            @mouseleave="currentId = null"
-            v-for="item in newSongInfo"
-            :key="item.id"
-            :class="{ active: currentId === item.id }"
-          >
-            <div class="pic">
+          <div class="content" v-for="item in newSongInfo" :key="item.id">
+            <div class="pic" @click="changePlayState(item.id)">
               <a href="javascript:;">
                 <img :src="item.picUrl" alt="" />
               </a>
@@ -109,50 +62,36 @@
 
       <!-- 推荐MV -->
       <div class="video-wrapper">
-        <div class="title clearfix">
-          <h3>推荐MV</h3>
-          <i class="iconfont">&#xe743;</i>
-        </div>
-        <div class="content">
-          <ul>
-            <li v-for="item in mvInfo" :key="item.id">
-              <a href="javascript:;">
-                <img :src="item.picUrl" alt="" />
-              </a>
-              <p>{{ item.name }}</p>
-              <span>{{ item.artists[0].name }}</span>
-
-              <div class="counts">
-                <i class="iconfont">&#xea6d;</i>
-                <span>{{ item.playCount | numberFormat }}</span>
-              </div>
-            </li>
-          </ul>
-        </div>
+        <MvItem :mvData="mvInfo" :hidden="3" @changeRoute="goRouteMvDetail">
+          <template v-slot:title>
+            <h3>
+              推荐MV
+              <i class="iconfont icon-arrow-right"></i>
+            </h3>
+          </template>
+        </MvItem>
       </div>
     </div>
-
-    <!-- 歌单详情 -->
-    <PlaylistDetail v-if="isShowPlayListDetail" :id = 'id'/>
   </div>
 </template>
 
 <script>
 import Carousel from "@/components/Carousel.vue";
-import PlaylistDetail from "@/components/PlaylistDetail";
+import ListItem from "@/components/list-item";
+import MvItem from "@/components/Mv-Item";
+
 export default {
   name: "Recommend",
   data() {
     return {
-      limit: 9, //显示多少条推荐歌单的歌单数量
+      limit: 10, //显示多少条推荐歌单的歌单数量
       menuInfo: [], //推荐歌单的数据
-      privateContentInfo: {}, //独家欢送数据
+      privateContentInfo: [], //独家欢送数据
       newSongInfo: [], //新歌信息
       mvInfo: [], //mv相关信息
       videoBg: require("@/assets/images/video.png"),
       currentId: null,
-      isShowPlayListDetail: false, //是否显示歌单详情
-      id:null,
+      id: null,
     };
   },
 
@@ -171,10 +110,12 @@ export default {
 
     // *显示当前歌单详情
     showPlaylistDetail(id) {
-      this.id = id
-      this.isShowPlayListDetail = true
-      // 通知父组件隐藏nav
-      this.$emit("update:visible", false);
+      this.$router.push({
+        path: "/playList",
+        query: {
+          id,
+        },
+      });
     },
 
     // 显示推荐歌单的Icon
@@ -194,7 +135,7 @@ export default {
     // * 获取独家放送
     async getPrivateContent() {
       const result = await this.$API.recommend.reqPrivateContent();
-      this.privateContentInfo = result;
+      this.privateContentInfo = result.result;
     },
 
     // * 获取新音乐
@@ -208,33 +149,51 @@ export default {
       const result = await this.$API.recommend.reqMV();
       this.mvInfo = result.result;
     },
+
+    // 路由跳转(自定义事件)
+    goRouteMvDetail(data) {
+      let id;
+      if (data.hasOwnProperty("id")) {
+        id = data.id;
+      } else {
+        id = data;
+      }
+      this.$router.push({ path: "/mvDetail", query: { id, type: "MV" } });
+    },
+
+    // 路由跳转(自定义事件)
+    goRoutePlaylist({ id }) {
+      this.$router.push({ path: "/playListDetail", query: { id } });
+    },
+
+    // 点击播放新歌
+    changePlayState(id) {
+      // todo 将当前的id存入vuex中
+      this.$store.commit("playList/UPDATEMUSICID", id);
+    },
   },
   components: {
     Carousel,
-    PlaylistDetail,
+    ListItem,
+    MvItem,
   },
 };
 </script>
 
-<style lang="less">
-.clearfix::after,
-.clearfix::before {
-  content: "";
-  display: table;
-}
-.clearfix::after {
-  clear: both;
-}
-.clearfix {
-  *zoom: 1;
-}
-
+<style lang="less" scoped>
 .content {
   margin-top: 10px;
-  width: 100%;
-  height: 100%;
+  height: 90%;
   .songMenu {
     width: 100%;
+    /deep/.list-content {
+      .list-item {
+        width: 18%;
+        .cover {
+          aspect-ratio: 1;
+        }
+      }
+    }
     .menu-content {
       width: 100%;
       ul {
@@ -245,7 +204,8 @@ export default {
         li {
           position: relative;
           width: 18%;
-          height: 34%;
+          height: 35%;
+          text-align: left;
           a {
             display: inline-block;
             width: 100%;
@@ -259,11 +219,17 @@ export default {
           .name {
             margin-top: 0;
             font-size: 14px;
+            height: 40px;
+            width: 100%;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            display: -webkit-box;
+            -webkit-line-clamp: 3;
           }
           .icon {
             position: absolute;
             right: 5px;
-            top: 100px;
+            bottom: 60px;
             width: 30px;
             height: 30px;
           }
@@ -283,40 +249,15 @@ export default {
     }
   }
 
-  .privateContent {
+  .private-content {
     width: 100%;
-    .content {
-      width: 100%;
-      margin-top: 0;
-      ul {
-        display: flex;
-        flex-direction: row;
-        flex-wrap: wrap;
-        justify-content: space-between;
-        li {
-          position: relative;
-          width: 32%;
-          height: 10%;
-          a {
-            display: block;
-            img {
-              width: 100%;
-              height: 100%;
-              border-radius: 5px;
-            }
-          }
-          i {
-            position: absolute;
-            left: 5px;
-            top: 8px;
-            font-size: 25px;
-            color: rgb(196, 191, 191);
-          }
-          p {
-            margin: 0;
-            text-align: left;
-            font-size: 14px;
-          }
+    .list-content {
+      .list-item {
+        width: 32%;
+        height: 10%;
+        margin-right: 0;
+        .cover {
+          aspect-ratio: 2/1;
         }
       }
     }
@@ -346,14 +287,14 @@ export default {
       justify-content: space-between;
       flex-wrap: wrap;
       .content {
-        width: 30%;
+        width: 32%;
         height: 55px;
         border-radius: 5px;
         .pic {
           position: relative;
           float: left;
-          width: 25%;
-          height: 100%;
+          width: 55px;
+          height: 55px;
           a {
             display: block;
             width: 100%;
@@ -371,7 +312,7 @@ export default {
             display: inline-block;
             width: 30px;
             height: 30px;
-            z-index: 999;
+            z-index: 1;
             cursor: pointer;
           }
         }
@@ -396,12 +337,28 @@ export default {
             color: rgb(173, 169, 169);
           }
         }
+        &:hover {
+          background-color: rgb(238, 235, 235);
+        }
       }
     }
   }
 
   .video-wrapper {
     margin-top: 20px;
+    .video-content {
+      max-height: calc(29vh);
+      height: 240px;
+      overflow: hidden;
+      .list-item {
+        width: 31.5%;
+        max-width: 270px;
+        .cover {
+          aspect-ratio: 1.8/1;
+        }
+      }
+    }
+
     .content {
       width: 100%;
       height: 100%;
@@ -451,6 +408,8 @@ export default {
 
   .title {
     position: relative;
+    width: 100px;
+    cursor: pointer;
     h3 {
       float: left;
       margin-bottom: 10px;

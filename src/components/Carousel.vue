@@ -38,7 +38,6 @@ export default {
 .slider-wrapper {
   overflow: hidden;
   width: 100%;
-  height: 100%;
   .el-carousel {
     .el-carousel__item {
       width: 50%;
