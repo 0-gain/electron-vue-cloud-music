@@ -6,8 +6,10 @@
       <!-- 推荐歌单 -->
       <div class="songMenu">
         <div class="title clearfix">
-          <h3>推荐歌单</h3>
-          <i class="iconfont">&#xe743;</i>
+          <h3>
+            推荐歌单
+            <i class="el-icon-arrow-right"></i>
+          </h3>
         </div>
         <List-item
           :listData="menuInfo"
@@ -22,9 +24,12 @@
           class="title clearfix"
           @click="$router.push({ path: '/video/privateContentList' })"
         >
-          <h3>独家放送</h3>
-          <i class="iconfont icon-arrow-right"></i>
+          <h3>
+            独家放送
+            <i class="el-icon-arrow-right"></i>
+          </h3>
         </div>
+
         <List-item
           :listData="privateContentInfo"
           :isShowIcon="true"
@@ -36,11 +41,10 @@
       <!-- 最新音乐 -->
       <div class="newSong">
         <div class="title clearfix">
-          <h3>最新音乐</h3>
-          <i class="iconfont">&#xe743;</i>
+          <h3>最新音乐<i class="el-icon-arrow-right"></i></h3>
         </div>
         <div class="wrapper">
-          <div class="content" v-for="item in newSongInfo" :key="item.id">
+          <div class="newSong_item" v-for="item in newSongInfo" :key="item.id">
             <div class="pic" @click="changePlayState(item.id)">
               <a href="javascript:;">
                 <img :src="item.picUrl" alt="" />
@@ -64,10 +68,7 @@
       <div class="video-wrapper">
         <MvItem :mvData="mvInfo" :hidden="3" @changeRoute="goRouteMvDetail">
           <template v-slot:title>
-            <h3>
-              推荐MV
-              <i class="iconfont icon-arrow-right"></i>
-            </h3>
+            <h3>推荐MV<i class="el-icon-arrow-right"></i></h3>
           </template>
         </MvItem>
       </div>
@@ -84,7 +85,7 @@ export default {
   name: "Recommend",
   data() {
     return {
-      limit: 10, //显示多少条推荐歌单的歌单数量
+      limit: 9, //显示多少条推荐歌单的歌单数量
       menuInfo: [], //推荐歌单的数据
       privateContentInfo: [], //独家欢送数据
       newSongInfo: [], //新歌信息
@@ -92,6 +93,8 @@ export default {
       videoBg: require("@/assets/images/video.png"),
       currentId: null,
       id: null,
+      // 默认每日推荐图片
+      picUrl: require("@/assets/images/imgLoading.png"),
     };
   },
 
@@ -105,7 +108,32 @@ export default {
     // * 获取推荐歌单
     async getRecommendSongMenu() {
       const result = await this.$API.recommend.reqRecommendSongMenu(this.limit);
-      this.menuInfo = result.result;
+      if (result.code === 200) {
+        this.menuInfo = result.result;
+        // 获取每日歌单
+        await this.getRecommendSongs();
+      }
+    },
+
+    // * 获取每日推荐歌单
+    async getRecommendSongs() {
+      const result = await this.$API.recommend.reqRecommendSongs();
+      if (result.code === 200) {
+        let { picUrl } = result.data.dailySongs[0].al || this;
+        let obj = {
+          name: "每日歌曲推荐",
+          picUrl,
+          isHiddenPlayCount: true,
+        };
+        this.menuInfo.unshift(obj);
+      } else {
+        let obj = {
+          name: "每日歌曲推荐",
+          picUrl: this.picUrl,
+          isHiddenPlayCount: true,
+        };
+        this.menuInfo.unshift(obj);
+      }
     },
 
     // *显示当前歌单详情
@@ -163,7 +191,11 @@ export default {
 
     // 路由跳转(自定义事件)
     goRoutePlaylist({ id }) {
-      this.$router.push({ path: "/playListDetail", query: { id } });
+      if (id) {
+        this.$router.push({ path: "/playListDetail", query: { id } });
+      } else {
+        this.$router.push({ path: "/dailySongs" });
+      }
     },
 
     // 点击播放新歌
@@ -188,7 +220,7 @@ export default {
     width: 100%;
     /deep/.list-content {
       .list-item {
-        width: 18%;
+        width: calc(100% / 5);
         .cover {
           aspect-ratio: 1;
         }
@@ -251,9 +283,9 @@ export default {
 
   .private-content {
     width: 100%;
-    .list-content {
+    /deep/.list-content {
       .list-item {
-        width: 32%;
+        width: calc(100% / 3);
         height: 10%;
         margin-right: 0;
         .cover {
@@ -266,19 +298,6 @@ export default {
   .newSong {
     width: 100%;
     margin-top: 20px;
-    .title {
-      position: relative;
-      h3 {
-        float: left;
-        margin-bottom: 10px;
-      }
-      i {
-        position: absolute;
-        left: 70px;
-        top: 18px;
-        font-size: 28px;
-      }
-    }
     .wrapper {
       display: flex;
       width: 100%;
@@ -286,10 +305,11 @@ export default {
       flex-direction: column;
       justify-content: space-between;
       flex-wrap: wrap;
-      .content {
+      .newSong_item {
         width: 32%;
         height: 55px;
         border-radius: 5px;
+        margin-bottom: 10px;
         .pic {
           position: relative;
           float: left;
@@ -346,80 +366,25 @@ export default {
 
   .video-wrapper {
     margin-top: 20px;
-    .video-content {
-      max-height: calc(29vh);
-      height: 240px;
-      overflow: hidden;
-      .list-item {
-        width: 31.5%;
-        max-width: 270px;
-        .cover {
-          aspect-ratio: 1.8/1;
-        }
-      }
-    }
-
-    .content {
-      width: 100%;
-      height: 100%;
-      ul {
-        display: flex;
-        flex-wrap: wrap;
-        justify-content: space-between;
-        li {
-          position: relative;
-          width: 24%;
-          text-align: left;
-          a {
-            width: 100%;
-            height: 120px;
-            display: inline-block;
-            img {
-              width: 100%;
-              height: 100%;
-              border-radius: 5px;
-            }
-          }
-          p {
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-            margin: 2px 0 0 0;
-            font-size: 14px;
-          }
-          span {
-            font-size: 12px;
-          }
-          .counts {
-            position: absolute;
-            right: 5px;
-            top: 5px;
-            font-size: 12px;
-            color: #fff;
-            i {
-              font-size: 12px;
-              margin-right: 2px;
-            }
-          }
-        }
-      }
-    }
   }
 
   .title {
-    position: relative;
-    width: 100px;
+    text-align: left;
     cursor: pointer;
+    margin-bottom: 10px;
     h3 {
-      float: left;
-      margin-bottom: 10px;
+      display: inline-block;
+      vertical-align: middle;
+      margin: 0;
+      i {
+        font-size: 18px;
+        font-weight: normal;
+      }
     }
-    i {
-      position: absolute;
-      left: 70px;
-      top: 18px;
-      font-size: 28px;
-    }
+  }
+  /deep/.title {
+    text-align: left;
+    margin-bottom: 10px;
   }
   .active {
     background-color: rgb(238, 235, 235);

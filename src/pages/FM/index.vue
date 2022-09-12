@@ -1,69 +1,79 @@
 <template>
-  <div class="fm-wrap">
-    <div class="songInfo">
-      <div class="card">
-        <div class="tracks">
-          <div
-            class="cover"
-            v-for="(t, index) in tracks"
-            :key="index"
-            :class="changeClass(index)"
-          >
-            <img v-lazy="t.album?.picUrl" alt="" @click="pre(index)" />
+  <div class="fm-wrap" ref="fmWrap">
+    <div class="fm-content">
+      <div class="songInfo">
+        <div class="card">
+          <div class="tracks">
+            <div
+              class="cover"
+              v-for="(t, index) in tracks"
+              :key="index"
+              :class="changeClass(index)"
+            >
+              <img v-lazy="t.album?.picUrl" alt="" @click="pre(index)" />
+            </div>
+            <i
+              class="iconfont icon-bofangqi-bofang"
+              @click="changePlayStatus(true)"
+              v-if="!this.$store.state.playList.isPlay"
+            ></i>
+            <i
+              class="iconfont icon-iconstop"
+              v-else
+              @click="changePlayStatus(false)"
+            ></i>
           </div>
-          <i
-            class="iconfont icon-bofangqi-bofang"
-            @click="changePlayStatus(true)"
-            v-if="!this.$store.state.playList.isPlay"
-          ></i>
-          <i
-            class="iconfont icon-iconstop"
-            v-else
-            @click="changePlayStatus(false)"
-          ></i>
+
+          <div class="operation">
+            <!-- 喜欢 -->
+            <button class="liked" @click="throttleLike(true)" v-if="!isLike">
+              <i class="iconfont icon-aixin2"></i>
+            </button>
+
+            <button class="liked" @click="throttleLike(false)" v-else>
+              <i class="iconfont icon-aixin3"></i>
+            </button>
+
+            <!-- 删除 -->
+            <button class="delete" @click="handleDeleteMusic">
+              <i class="el-icon-delete"></i>
+            </button>
+
+            <!-- 下一首 -->
+            <button class="next" @click="throttleNext">
+              <i class="iconfont icon-xiayishou"></i>
+            </button>
+
+            <!-- 更多 -->
+            <button class="more">
+              <i class="el-icon-more"></i>
+            </button>
+          </div>
         </div>
 
-        <div class="operation">
-          <!-- 喜欢 -->
-          <button
-            class="liked"
-            @click="throttleLike(true)"
-            v-if="!current_song.isLike"
-          >
-            <i class="iconfont icon-aixin2"></i>
-          </button>
-
-          <button class="liked" @click="throttleLike(false)" v-else>
-            <i class="iconfont icon-aixin3"></i>
-          </button>
-
-          <!-- 删除 -->
-          <button class="delete" @click="handleDeleteMusic">
-            <i class="el-icon-delete"></i>
-          </button>
-
-          <!-- 下一首 -->
-          <button class="next" @click="throttleNext">
-            <i class="iconfont icon-xiayishou"></i>
-          </button>
-
-          <!-- 更多 -->
-          <button class="more">
-            <i class="el-icon-more"></i>
-          </button>
+        <!-- 歌词 -->
+        <div class="lyric">
+          <lyric></lyric>
         </div>
       </div>
 
-      <div class="lyric">
-        <div class="songName"></div>
+      <!-- 评论 -->
+      <div class="comment">
+        <comment
+          type="0"
+          :id="current_song.id"
+          @changeScrollTop="changeScrollTop"
+        ></comment>
       </div>
     </div>
   </div>
 </template>
 
 <script>
-import { mapState} from "vuex";
+import { mapState, mapGetters } from "vuex";
 import { throttle } from "@/utils";
+import lyric from "@/components/Lyric";
+import comment from "@/components/Comment";
 export default {
   name: "FM",
   data() {
@@ -76,6 +86,8 @@ export default {
       current_song: {},
       // 是否点击了下一首
       isNext: true,
+      // 歌词的高度
+      LineHeight: 0,
     };
   },
   mounted() {
@@ -114,39 +126,17 @@ export default {
       }
     },
 
-    // 喜欢音乐
-    async getLikeMusic(id, like) {
-      this.$API.musicList
-        .reqLikeMusic(id, like)
-        .then((value) => {
-          this.current_song.isLike = like;
-          if (like) {
-            this.$message({
-              message: "已添加到我喜欢的音乐",
-              type: "success",
-              offset: 100,
-            });
-          } else {
-            this.$message({
-              message: "取消喜欢成功",
-              type: "warning",
-              offset: 100,
-            });
-          }
-        })
-        .catch((error) => {
-          this.$message({
-            message: "操作失败",
-            type: "error",
-            offset: 100,
-          });
-        });
-    },
-
     // 处理喜欢的音乐
     handleLike(flag) {
       let { id } = this.tracks[this.current_song_index];
-      // this.getLikeMusic(id, flag);
+      if (flag) {
+        this.userLikeList.push(id);
+      } else {
+        this.userLikeList.splice(this.userLikeList.indexOf(id), 1);
+      }
+      this.$store
+        .dispatch("playList/getLikeMusic", { id, flag })
+        .then((value) => console.log(value));
     },
 
     throttleLike: throttle(function (flag) {
@@ -195,7 +185,7 @@ export default {
       const result = await this.$API.musicList.reqFm_trash(id);
       this.tracks.splice(this.current_song_index, 1);
 
-      this.isNext = true
+      this.isNext = true;
 
       // todo 更新当前的musicId
       this.$store.commit(
@@ -203,7 +193,7 @@ export default {
         this.tracks[this.current_song_index].id
       );
 
-      if (this.tracks.length === 1) this.getPersonalFm();
+      this.getPersonalFm();
 
       this.$message({
         message: "已成功移除",
@@ -229,6 +219,11 @@ export default {
 
       this.$store.commit("playList/UPDATEMUSICID", id);
     },
+
+    // 滚动到顶部
+    changeScrollTop() {
+      this.$refs.fmWrap.scrollTo({ top: 600, behavior: "smooth" });
+    },
   },
   computed: {
     ...mapState({
@@ -240,7 +235,13 @@ export default {
       musicList(state) {
         return state.playList.musicList || {};
       },
+      // 用户喜欢的歌曲列表
+      userLikeList: (state) => {
+        return state.user.userLikeList;
+      },
     }),
+
+    ...mapGetters(["isLike"]),
   },
   watch: {
     // 监听vuex中musicId的变化
@@ -262,101 +263,114 @@ export default {
       }
 
       this.isNext = false;
+
+      /* // 获取歌词
+      this.$store.dispatch("playList/getLyric", id); */
     },
   },
+  components: { lyric, comment },
 };
 </script>
 
 <style lang="less" scoped>
 .fm-wrap {
-  width: 75vw;
-  margin: 0 auto;
-  .songInfo {
+  height: calc(100vh - 130px);
+  overflow-y: scroll;
+  .fm-content {
     width: 50vw;
-    margin: 100px auto;
-    .card {
-      position: relative;
-      width: 350px;
-      overflow: hidden;
-      .tracks {
-        height: 300px;
+    margin: 0 auto;
+    .songInfo {
+      margin: 30px auto;
+      display: flex;
+      justify-content: space-between;
+      .card {
         position: relative;
-        .cover {
-          position: absolute;
-          width: 300px;
-          height: 300px;
-          border: 1px solid @border-color;
-          border-radius: 10px;
-          overflow: hidden;
-          box-sizing: border-box;
-          transform: translateX(50px);
-          img {
-            width: 100%;
-            height: 100%;
+        width: 310px;
+        overflow: hidden;
+        margin-top: 40px;
+        .tracks {
+          height: 260px;
+          position: relative;
+          .cover {
+            position: absolute;
+            width: 260px;
+            height: 260px;
+            border: 1px solid @border-color;
+            border-radius: 10px;
+            overflow: hidden;
+            box-sizing: border-box;
+            transform: translateX(50px);
+            img {
+              width: 100%;
+              height: 100%;
+            }
           }
-        }
-        .left {
-          transform: scale(0.8);
-          transform-origin: left;
-          transition: all 0.5s ease;
-        }
-        .right {
-          transform: scale(0.8) translateX(200px);
-          transition: all 0.5s ease;
-          z-index: -1;
-        }
-        .before {
-          display: none;
-        }
-        .center {
-          z-index: 1;
-          transition: all 0.5s ease;
-        }
-        i {
-          position: absolute;
-          z-index: 2;
-          background-color: rgba(255, 255, 255, 0.9);
-          border-radius: 50%;
-          color: rgb(236, 65, 65);
-          cursor: pointer;
-        }
-        .icon-bofangqi-bofang {
-          right: 125px;
-          font-size: 50px;
-          top: 125px;
-        }
-        .icon-iconstop {
-          right: 10px;
-          bottom: 10px;
-          font-size: 20px;
-          padding: 10px;
-        }
-      }
-      .operation {
-        margin-top: 50px;
-        width: 300px;
-        text-align: left;
-        transform: translateX(50px);
-        display: flex;
-        justify-content: space-between;
-        button {
-          width: 40px;
-          height: 40px;
-          border-radius: 50%;
-          border: 1px solid @border-color;
-          cursor: pointer;
-          background-color: transparent;
-          &:hover {
-            background-color: @bg-color-hover;
+          .left {
+            transform: scale(0.8);
+            transform-origin: left;
+            transition: all 0.5s ease;
+          }
+          .right {
+            transform: scale(0.8) translateX(200px);
+            transition: all 0.5s ease;
+            z-index: -1;
+          }
+          .before {
+            display: none;
+          }
+          .center {
+            z-index: 1;
+            transition: all 0.5s ease;
           }
           i {
-            font-size: 22px;
+            position: absolute;
+            z-index: 2;
+            background-color: rgba(255, 255, 255, 0.9);
+            border-radius: 50%;
+            color: rgb(236, 65, 65);
+            cursor: pointer;
+          }
+          .icon-bofangqi-bofang {
+            right: 105px;
+            font-size: 50px;
+            top: 105px;
+          }
+          .icon-iconstop {
+            right: 10px;
+            bottom: 10px;
+            font-size: 20px;
+            padding: 10px;
           }
         }
-        .icon-aixin3 {
-          color: rgb(236, 65, 65);
+        .operation {
+          margin-top: 30px;
+          width: 260px;
+          text-align: left;
+          transform: translateX(50px);
+          display: flex;
+          justify-content: space-between;
+          button {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            border: 1px solid @border-color;
+            cursor: pointer;
+            background-color: transparent;
+            &:hover {
+              background-color: @bg-color-hover;
+            }
+            i {
+              font-size: 22px;
+            }
+          }
+          .icon-aixin3 {
+            color: rgb(236, 65, 65);
+          }
         }
       }
+    }
+    .comment{
+      width: 100%;
     }
   }
 }

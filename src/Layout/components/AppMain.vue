@@ -10,6 +10,7 @@
         'album',
         'MvDetail',
         'SearchList',
+        'RecentMusic',
       ]"
     >
       <router-view v-if="showRouter"></router-view>
@@ -18,7 +19,6 @@
 </template>
 
 <script>
-// import Discover from "@/pages/Discover/discover.vue"
 export default {
   name: "AppMain",
   data() {

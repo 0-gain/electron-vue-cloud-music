@@ -34,10 +34,40 @@
             <span>创建的歌单</span>
             <i class="iconfont icon-zengjia"></i>
           </template>
-          <el-menu-item index="3-1">
-            <i class="iconfont icon-heart-line"></i>
-            <span>我喜欢的音乐</span>
-            <i class="iconfont icon-xindiantu"></i>
+          <el-menu-item
+            :index="('3' + index).toString()"
+            v-for="(list, index) in createList"
+            :key="index"
+            @click="goPlayListDetail(list)"
+          >
+            <div class="like" v-if="index === 0">
+              <i class="iconfont icon-aixin2"></i>
+              <span>我喜欢的音乐</span>
+              <i class="iconfont icon-xindiantu"></i>
+            </div>
+
+            <div class="other" v-else>
+              <i class="iconfont icon-yinleliebiao"></i>
+              <span>{{ list.name }}</span>
+            </div>
+          </el-menu-item>
+        </el-submenu>
+
+        <!-- 收藏的歌单 -->
+        <el-submenu index="4">
+          <template slot="title">
+            <span>收藏的歌单</span>
+          </template>
+          <el-menu-item
+            :index="('4' + index).toString()"
+            v-for="(list, index) in collectionList"
+            :key="index"
+            @click="goPlayListDetail(list)"
+          >
+            <div class="other">
+              <i class="iconfont icon-yinleliebiao"></i>
+              <span>{{ list.name }}</span>
+            </div>
           </el-menu-item>
         </el-submenu>
       </el-menu>
@@ -47,19 +77,18 @@
 
 <script>
 import { myMusicMap } from "@/router/modules/myMusic";
-import { playListMap } from "@/router/modules/playList";
+import { mapState } from "vuex";
 export default {
   name: "Sidebar",
   data() {
     return {
       myMusicMap,
-      playListMap,
       openeds: ["3"],
     };
   },
   computed: {
     routes() {
-      let arr = this.$router.options.routes[0].children.slice(0,7);
+      let arr = this.$router.options.routes[0].children.slice(0, 6);
       let newArr = [];
       arr.forEach((element) => {
         if (!element.meta.icon) {
@@ -68,11 +97,23 @@ export default {
       });
       return newArr;
     },
+    //获取用户的歌单
+    ...mapState({
+      createList(state) {
+        return state.user.createList;
+      },
+      collectionList(state) {
+        return state.user.collectionList;
+      },
+    }),
   },
   methods: {
     show(route) {
       const path = route.path;
       this.$router.push({ path });
+    },
+    goPlayListDetail(list) {
+      this.$router.push({ path: "/playListDetail", query: { id: list.id } });
     },
   },
 };
@@ -83,34 +124,37 @@ export default {
   position: fixed;
   left: 0;
   top: 60px;
-  height: 100%;
   border-right: 1px solid #e5e5e6;
   box-sizing: border-box;
   width: 200px;
-  overflow: hidden;
   .el-scrollbar {
-    width: 200px;
-    height: 100%;
     color: #333;
+    width: 100%;
     text-align: left;
     .el-menu {
       padding-top: 10px;
       .el-menu-item {
         padding-left: 10px !important;
-        margin: 3px 0 2px 10px;
+        margin: 3px 5px 2px 10px;
         height: 35px;
         line-height: 35px;
         text-align: left;
+        box-sizing: border-box;
         &:hover {
-          background-color: rgba(173, 175, 175, 0.1);
+          background-color: @bg-deep-color-hover;
         }
         i {
           font-size: 13px;
           margin-right: 5px;
           color: #333;
         }
+        & > .is-active {
+          background-color: @bg-color-hover;
+          color: #333;
+        }
       }
       .el-submenu {
+        background-color: transparent !important;
         .el-submenu__title {
           position: relative;
           height: 30px;
@@ -146,16 +190,26 @@ export default {
               border-radius: 50px;
               border: 1px solid #d5d5d6;
             }
+            & > div {
+              width: 170px;
+              overflow: hidden;
+              text-overflow: ellipsis;
+              white-space: nowrap;
+            }
           }
         }
       }
       .is-active {
-        background-color: rgba(173, 175, 175, 0.1);
-        font-size: 17px;
-        font-weight: bold;
+        background-color: @bg-deep-color-hover;
         color: #333;
       }
     }
+  }
+  .scrollbar-wrapper {
+    height: calc(100vh - 130px);
+  }
+  .is-horizontal {
+    display: none;
   }
 }
 </style>

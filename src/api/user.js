@@ -8,6 +8,14 @@ export function login_cellphone(phone, password) {
   });
 }
 
+// 退出登录
+export function logoOut() {
+  return request.get("/logout", {
+    params: {
+      _: new Date().getTime(),
+    },
+  });
+}
 // 二维码登录
 // 1.二维码key生成
 export function reqQr_key() {
@@ -86,3 +94,11 @@ export const reqEvent = (pagesize, lasttime) =>
 // 喜欢音乐列表
 export const reqLikeList = (uid) =>
   request.get("/likelist", { parmas: { uid, _: new Date().getTime() } });
+
+// 获取用户歌单
+export const reqUser_playlist = (uid) =>
+  request.get("/user/playlist", { params: { uid, _: new Date().getTime() } });
+
+// 获取用户电台
+export const reqUser_dj = (uid) =>
+  request.get("/user/dj", { params: { uid, _: new Date().getTime() } });

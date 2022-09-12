@@ -1,4 +1,9 @@
-import { reqSongUrl, reqSongDetail } from "@/api/discover/musicList";
+import {
+  reqSongUrl,
+  reqSongDetail,
+  reqLikeMusic,
+  reqLyric,
+} from "@/api/discover/musicList";
 const state = {
   songUrl: {}, //当前所点击的歌曲url
   musicAllList: [], //当前歌单所有的歌曲详情
@@ -8,8 +13,6 @@ const state = {
   duration: "", //歌曲的总时长
   // 当前歌曲的歌词
   lyric: [],
-  // 当前歌曲的歌词时间
-  lyricTime: [],
   // 当前播放的时间
   currentTime: 0,
   // 当前歌词的索引
@@ -18,7 +21,10 @@ const state = {
   isPlaylistCardDetail: false,
   // 上一次获取歌单的时候
   lastTime: new Date().getTime(),
-  
+  // 播放列表
+  drawerList: [],
+  // 最近播放
+  recentList: [],
 };
 
 const mutations = {
@@ -36,9 +42,33 @@ const mutations = {
   GET_CURRENT_SONG_DETAIL(state, songInfo) {
     state.duration = songInfo.dt;
     state.musicList = songInfo;
+
+    // 判断当前所点击的是否重复
+    state.recentList.forEach((el, index) => {
+      if (songInfo.id === el.id) {
+        // 说明重复
+        state.recentList.splice(index, 1);
+      }
+    });
+    if (state.recentList.length === 100) {
+      state.recentList.pop();
+    }
+    // 将所播放过的歌曲存入localStorage中
+    songInfo.playTime = new Date().getTime();
+    state.recentList.unshift(songInfo);
+    localStorage.setItem("history_list", JSON.stringify(state.recentList));
   },
 
-  
+  // 抽屉的播放列表
+  UPDATEDRAWERLIST(state, data) {
+    state.drawerList = data;
+  },
+
+  //  清空播放历史
+  CLEAR_HISTORY(state){
+    state.recentList = []
+    localStorage.setItem("history_list", JSON.stringify(state.recentList));
+  },
 
   // 修改播放的状态
   CHANGEPLAYSTATE(state, isPlay) {
@@ -54,7 +84,7 @@ const mutations = {
   UPDATECURRENTTIME(state, currentTime) {
     state.currentTime = currentTime;
   },
-  
+
   // 更新音乐的歌词
   UPDATELYRIC(state, lyric) {
     state.lyric = lyric;
@@ -85,6 +115,7 @@ const mutations = {
     state.duration = 0;
     // 重置当前音乐的id
     state.musicId = "";
+    state.drawerList = [];
   },
 };
 
@@ -101,6 +132,12 @@ const actions = {
   async getSongDetail({ commit }, trackIds) {
     const result = await reqSongDetail(trackIds);
     if (result.code === 200) {
+      let {songs} = result
+
+      songs.forEach(el=>{
+        el.isLike = false
+      })
+
       // 说明不止一首
       if (result.songs.length > 1) {
         commit("GETSONGDETAIL", result.songs);
@@ -110,10 +147,45 @@ const actions = {
       }
     }
   },
-  
-  
-};
 
+  // 喜欢歌曲
+  async getLikeMusic({ commit }, { id, flag }) {
+    const result = await reqLikeMusic(id, flag);
+    console.log(result);
+  },
+
+  // 获取歌词
+  async getLyric({ commit }, id) {
+    const result = await reqLyric(id);
+    if (result.code === 200) {
+      let lyrics = result.lrc.lyric;
+      let arr = lyrics.split("\n");
+
+      let lyricArr = [];
+
+      //过滤空行,不去除后面split会出现undefined
+      arr = arr.filter((item) => {
+        if (item != "") {
+          if (item.split("]")[1]) {
+            return true;
+          }
+        }
+      });
+
+      arr.forEach((element) => {
+        let str = element.split("[")[1];
+        str = str.split("]")[0];
+        let min = str.split(":")[0] * 60; //转换为分
+        let sec = str.split(":")[1] * 1;
+        let item = min + Math.floor(sec);
+
+        // 二维数组
+        lyricArr.push([item, element.split("]")[1]]);
+      });
+      commit("UPDATELYRIC", lyricArr);
+    }
+  },
+};
 
 export default {
   namespaced: true,

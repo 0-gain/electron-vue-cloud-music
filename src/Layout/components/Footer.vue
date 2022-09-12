@@ -29,8 +29,12 @@
       <div class="otherInfo">
         <div class="songName">
           <span>{{ musicList.name }}</span>
-          <i class="iconfont icon-aixin2" v-if="!isLike"></i>
-          <i class="iconfont icon-aixin3" v-else></i>
+          <i
+            class="iconfont icon-aixin2"
+            @click="handleLike(true)"
+            v-if="!isLike"
+          ></i>
+          <i class="iconfont icon-aixin3" @click="handleLike(false)" v-else></i>
         </div>
         <div class="creator clearfix">
           <span
@@ -71,14 +75,14 @@
 
         <!-- 进度条 -->
         <div class="progressBar">
-          <span class="currentTime">{{ currentTime | time }}</span>
+          <span class="currentTime">{{ currentTime | moment('mm:ss') }}</span>
           <el-slider
             v-model="timeProgress"
             :disabled="musicList.length === 0"
             :max="maxTime"
             @change="changeProgress"
           ></el-slider>
-          <span class="totalTime">{{ duration | time }}</span>
+          <span class="totalTime">{{ duration | moment('mm:ss') }}</span>
         </div>
       </div>
     </div>
@@ -122,7 +126,6 @@
       title="当前播放"
       :visible.sync="isShowDialog"
       direction="rtl"
-      size="30%"
       :modal="false"
       :show-close="false"
     >
@@ -166,8 +169,9 @@
 </template>
 
 <script>
-import { mapState } from "vuex";
+import { mapState, mapGetters } from "vuex";
 import Test from "@/components/Test";
+
 // 保存当前的变量
 let currentVolume = 0;
 export default {
@@ -175,7 +179,6 @@ export default {
   data() {
     return {
       picUrl: require("@/assets/images/imgLoading.png"),
-      drawerList: [], //抽屉播放列表的音乐数据
       // 进度条的位置
       timeProgress: 0,
       // 当前播放的时间
@@ -219,6 +222,7 @@ export default {
 
     // 显示音乐详情页
     showCardDetail() {
+      if (this.$route.name == "FM") return;
       const id = this.musicId
         ? this.musicId
         : this.$store.state.playList.musicId;
@@ -290,12 +294,12 @@ export default {
     },
     // 暂停播放音乐
     pauseMusic() {
-      this.$store.commit('playList/CHANGEPLAYSTATE',false)
+      this.$store.commit("playList/CHANGEPLAYSTATE", false);
     },
 
     //播放音乐
     playMusic() {
-      this.$store.commit('playList/CHANGEPLAYSTATE',true)
+      this.$store.commit("playList/CHANGEPLAYSTATE", true);
     },
 
     // 双击播放（播放列表）
@@ -314,12 +318,20 @@ export default {
     // 显示抽屉的播放列表
     showDrawer() {
       this.isShowDialog = !this.isShowDialog;
-      this.drawerList = this.musicAllList;
+    },
+
+    // 喜欢歌曲
+    handleLike(flag) {
+      if (flag) {
+        this.userLikeList.push(this.musicId);
+      } else {
+        this.userLikeList.splice(this.userLikeList.indexOf(this.musicId), 1);
+      }
+      this.$store.dispatch("playList/getLikeMusic", { id: this.musicId, flag });
     },
 
     // 清空抽屉的播放列表
     cleanDrawerList() {
-      this.drawerList = [];
       this.pauseMusic();
       // 清空当前播放音乐的数据
       this.$store.commit("playList/RESETCURRENTMUSICK");
@@ -339,11 +351,13 @@ export default {
       currentMusicUrl: (state) => {
         return state.playList.songUrl;
       },
+      userLikeList: (state) => {
+        return state.user.userLikeList;
+      },
+      drawerList: (state) => state.playList.drawerList,
     }),
-    
-    isLike(){
-      // return this.$store.getters.isLike()
-    }
+
+    ...mapGetters(["isLike"]),
   },
 
   watch: {
@@ -355,12 +369,15 @@ export default {
 
       // todo 获取当前歌曲详情
       this.$store.dispatch("playList/getSongDetail", id);
+
+      // 获取歌词
+      this.$store.dispatch("playList/getLyric", id);
     },
 
     // 监听vuex中的播放状态
-    "$store.state.playList.isPlay"(isPlay){
-      isPlay ? this.$refs.audioPlayer.play() : this.$refs.audioPlayer.pause()
-    }
+    "$store.state.playList.isPlay"(isPlay) {
+      isPlay ? this.$refs.audioPlayer.play() : this.$refs.audioPlayer.pause();
+    },
   },
   components: {
     Test,
@@ -417,6 +434,7 @@ export default {
       text-align: left;
       .songName {
         span {
+          display: inline-block;
           max-width: 140px;
           overflow: hidden;
           text-overflow: ellipsis;
@@ -587,6 +605,10 @@ export default {
   .el-drawer__wrapper {
     top: 60px;
     bottom: 70px;
+    .el-drawer {
+      width: 400px !important;
+      box-sizing: border-box;
+    }
     .el-drawer__header {
       text-align: left;
       margin-bottom: 0;
@@ -597,14 +619,13 @@ export default {
       }
     }
     .el-drawer__body {
+      margin-top: 20px;
       ul {
-        float: left;
         position: fixed;
+        width: 400px;
+        padding-left: 20px;
         z-index: 9;
-        width: 420px;
-        height: 30px;
         line-height: 30px;
-        margin-left: 20px;
         background-color: #fff;
         border-bottom: 1px solid #e6e4e4;
         li {
@@ -616,6 +637,7 @@ export default {
           &.collect {
             float: right;
             font-size: 13px;
+            cursor: pointer;
             i {
               float: left;
               font-size: 20px;
@@ -627,11 +649,12 @@ export default {
             margin: 0 10px;
             font-size: 13px;
             color: steelblue;
+            cursor: pointer;
           }
         }
       }
       .el-table {
-        padding-top: 10px;
+        margin-top: 30px;
       }
       .el-table .el-table__cell {
         padding: 5px 0;
@@ -663,6 +686,9 @@ export default {
     }
     .active-row div {
       color: rgb(236, 65, 65) !important;
+    }
+    .el-table__header-wrapper {
+      display: none;
     }
   }
 }

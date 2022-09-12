@@ -23,10 +23,17 @@
 
           <div class="create" v-if="itemData.creator">
             <div class="creator">
-              <img :src="itemData.creator.avatarUrl" alt="" />
-              <span>{{ itemData.creator.nickname }}</span>
+              <router-link
+                :to="{
+                  path: '/person',
+                  query: { id: itemData.creator.userId },
+                }"
+              >
+                <img :src="itemData.creator.avatarUrl" alt="" />
+                <span>{{ itemData.creator.nickname }}</span>
+              </router-link>
               <span class="createTime"
-                >{{ itemData.createTime | toDate }}创建</span
+                >{{ itemData.createTime | moment("YYYY-MM-DD") }}创建</span
               >
             </div>
           </div>
@@ -63,6 +70,18 @@
               <i class="iconfont icon-folder-add"></i>
               <span>收藏</span>
             </li>
+            <li
+              v-if="$route.query.accountId"
+              @click="
+                $router.push({
+                  path: '/person',
+                  query: { id: $route.query.accountId },
+                })
+              "
+            >
+              <i class="iconfont icon-custom-user"></i>
+              <span>个人主页</span>
+            </li>
           </ul>
 
           <ul v-if="itemData.creator || itemData.info">
@@ -75,7 +94,11 @@
               <i class="el-icon-folder-add"></i>
               <span
                 >收藏({{
-                  (itemData.subscribedCount || subCount) | numberFormat
+                  itemData.subscribedCount || subCount
+                    ? $options.filters.numberFormat(
+                        itemData.subscribedCount || subCount
+                      )
+                    : 0
                 }})</span
               >
             </li>
@@ -83,8 +106,11 @@
               <i class="iconfont icon-fenxiang"></i>
               <span
                 >分享({{
-                  (itemData.shareCount || itemData.info.shareCount)
-                    | numberFormat
+                  itemData.shareCount || itemData.info?.shareCount
+                    ? $options.filters.numberFormat(
+                        itemData.shareCount || itemData.info?.shareCount
+                      )
+                    : 0
                 }})</span
               >
             </li>
@@ -146,10 +172,14 @@
 
             <div class="create" v-if="itemData.artist">
               <div class="creator">
-                <div>歌手：<a href="javascript:;" class="name">{{ itemData.artist.name }}</a></div>
-                <div class="publishTime"
-                  >时间：{{ itemData.publishTime | toDate }}</div
-                >
+                <div>
+                  歌手：<a href="javascript:;" class="name">{{
+                    itemData.artist.name
+                  }}</a>
+                </div>
+                <div class="publishTime">
+                  时间：{{ itemData.publishTime | toDate }}
+                </div>
               </div>
             </div>
           </div>
@@ -189,12 +219,12 @@ export default {
       },
     },
     // 是否显示简介
-    isShowDescription:{
-      type:Boolean,
-      default(){
-        return false
-      }
-    }
+    isShowDescription: {
+      type: Boolean,
+      default() {
+        return false;
+      },
+    },
   },
 };
 </script>
@@ -273,7 +303,7 @@ export default {
               color: #333;
               margin-left: 10px;
             }
-            .name{
+            .name {
               color: rgb(80, 125, 175);
             }
           }

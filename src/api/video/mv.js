@@ -82,6 +82,7 @@ export const reqAllComment = (id, type, pageSize, pageNo = 1, cursor) =>
       pageNo,
       sortType: 3,
       cursor,
+      _: new Date().getTime(),
     },
   });
 
@@ -92,9 +93,41 @@ export const reqAllHotComment = (id, type, pageSize) =>
       id,
       type,
       pageSize,
+      _: new Date().getTime(),
     },
   });
 
+// 评论点赞
+/* 
+  id:资源id，如歌曲id，mv id
+  cid：评论id
+  t：是否点赞，1：点赞，0：取消点赞
+  type: 数字,资源类型,对应歌曲,0：歌曲,1：mv,2: 歌单,3：专辑,4：电台,5：视频,6：动态
+*/
+export const reqCommentLike = (id, cid, t, type) =>
+  request.get("/comment/like", {
+    params: {
+      id,
+      cid,
+      t,
+      type,
+      _: new Date().getTime(),
+    },
+  });
+
+// 发送/删除评论
+
+/* 
+  t: 1发送，2回复，0删除
+  type: 数字,资源类型,对应歌曲,0：歌曲,1：mv,2: 歌单,3：专辑,4：电台,5：视频,6：动态
+  id: 对应资源id(如果给动态发送/删除，评论，则不需要传id，需要传动态的threadId)
+  content：要发送的内容
+  commentId：回复的评论id(回复评论必填)
+*/
+export const reqPublishOrDeleteComment = (t, type, id, content, commentId) =>
+  request.get("/comment", {
+    params: { t, type, id, content, commentId, _: new Date().getTime() },
+  });
 // 最新mv
 export const reqNewMv = (area, limit = 8) =>
   request.get("/mv/first", {
@@ -111,7 +144,7 @@ export const reqMvExclusive = (limit = 8) =>
   });
 
 // 全部mv
-export const reqMvAll = (area, order,type, limit = 8, offset) =>
+export const reqMvAll = (area, order, type, limit = 8, offset) =>
   request.get("/mv/all", {
     params: {
       area,

@@ -54,32 +54,16 @@ body {
 .fade-leave-to {
   opacity: 0;
 }
-@media only screen and (min-width: 1020px) {
+@media only screen and (min-width: 1200px) {
   .col-lg {
     width: 25%;
   }
 }
-@media only screen and (max-width: 1020px) {
+@media only screen and (max-width: 1200px) {
   .col-md {
     width: 33.33333%;
   }
   .hidden-md-only {
     display: none;
   }
-}
-.el-icon-female {
-  color: #ffa0b0;
-  font-size: 16px;
-  background-color: #f8e4e7;
-  padding: 3px;
-  border-radius: 50%;
-  margin-left: 10px;
-}
-.el-icon-male {
-  color: #5bbbd1;
-  font-size: 16px;
-  background-color: #bff3ff;
-  padding: 3px;
-  border-radius: 50%;
-  margin-left: 10px;
 }

@@ -22,15 +22,38 @@ Vue.filter("moment", function (dataStr, pattern = "YYYY-MM-DD HH:mm:ss") {
   return moment(dataStr).format(pattern);
 });
 
-Vue.filter("toDate", function (val, format) {
-  return moment(val).format(format || "YYYY-MM-DD");
+// 处理index
+Vue.filter("indexFormat", function (val) {
+  let index = val + 1;
+  if (index < 10) {
+    return "0" + index;
+  }
+  return index;
 });
 
-Vue.filter("timeStrFormat", function (val, format) {
-  return moment(val).format(format || "HH:mm");
-});
+//处理时间
+Vue.filter("handlePlayTime", function (val) {
+  const now = new Date().getTime();
+  const diff = now - val;
+  // 获取秒
+  const sec = parseInt(diff / 1000);
 
-// 秒和毫秒
-Vue.filter("time", function (val, format) {
-  return moment(val).format(format || "mm:ss");
+  // 获取分
+  const min = parseInt(sec / 60);
+  // 获取小时
+  const hour = parseInt(min / 60);
+  // 获取天
+  const day = parseInt(hour / 24);
+
+  if (sec < 60) {
+    return '刚刚';
+  } else if (min < 60) {
+    return min + "分钟前";
+  } else if (hour < 24) {
+    return hour + "小时前";
+  } else if (day <= 1) {
+    return "昨天";
+  } else {
+    return moment(val).format("YYYY-MM-DD");
+  }
 });

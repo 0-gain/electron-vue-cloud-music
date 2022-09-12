@@ -1,22 +1,28 @@
 <template>
-  <div class="list-content">
+  <div
+    class="list-content"
+    v-loading="!listData.length"
+    element-loading-text="拼命加载中"
+    element-loading-spinner="el-icon-loading"
+  >
     <div
       class="list-item"
       v-for="(item, index) in listData"
       :key="index"
       @click="goRoute(item)"
-      v-loading="!listData.length"
-      element-loading-text="拼命加载中"
-      element-loading-spinner="el-icon-loading"
     >
       <div
-        class="cover"
+        class="cover blurImg"
         @mouseenter="currentIndex = index"
         @mouseleave="currentIndex = -1"
       >
         <img
           v-lazy="
-            item.picUrl || item.coverImgUrl || item.imgurl || item.coverUrl || item.cover
+            item.picUrl ||
+            item.coverImgUrl ||
+            item.imgurl ||
+            item.coverUrl ||
+            item.cover
           "
           alt=""
           :key="item.id"
@@ -26,13 +32,22 @@
 
         <i class="iconfont icon-huangguan" v-show="item.highQuality"></i>
 
-        <span class="icon" v-show="isShowCounts && !hiddenIcon">
+        <span
+          class="icon"
+          v-show="isShowCounts && !hiddenIcon && !item.isHiddenPlayCount"
+        >
           <i class="iconfont icon-24gl-play"></i>
           <span>{{
-            (item.playCount ? item.playCount : item.playTime) | numberFormat
+            $options.filters.numberFormat(item.playCount || item.playTime) || 0
           }}</span>
         </span>
 
+        <span class="date" v-show="item.isHiddenPlayCount">
+          <span>
+            Daily<br />
+            {{ handleDate }}
+          </span>
+        </span>
         <transition name="fade">
           <i
             class="iconfont icon-bofangqi-bofang"
@@ -43,10 +58,14 @@
       <p class="des" v-show="item.name">{{ item.name }}</p>
 
       <p class="title" v-show="item.title">{{ item.title }}</p>
-      <p class="creator" v-if="item.creator">by {{ item.creator.nickname }}</p>
+      <p class="creator" v-if="item.creator && showType != 'person'">
+        by {{ item.creator.nickname }}
+      </p>
+      <p class="creator" v-if="showType === 'person'">
+        {{ item.trackCount }}首
+      </p>
       <p v-if="item.artists" class="artistsName">{{ item.artists[0].name }}</p>
     </div>
-
   </div>
 </template>
 
@@ -97,12 +116,24 @@ export default {
         return false;
       },
     },
+
+    showType: {
+      type: String,
+      default() {
+        return;
+      },
+    },
   },
   methods: {
     // 与父组件通信
     goRoute(item) {
-      const { id, vid } = item;
-      this.$emit("changeRoute", { id, vid });
+      const { id, vid, accountId } = item;
+      this.$emit("changeRoute", { id, vid, accountId });
+    },
+  },
+  computed: {
+    handleDate() {
+      return new Date().getDate();
     },
   },
 };
@@ -110,22 +141,25 @@ export default {
 
 <style lang="less" scoped>
 .list-content {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: space-between;
+  text-align: left;
+  margin: 0 -10px;
   .list-item {
-    width: 372px;
+    display: inline-block;
+    vertical-align: top;
+    padding: 0 10px;
     margin-bottom: 15px;
     cursor: pointer;
-    overflow: hidden;
+    box-sizing: border-box;
+
     .cover {
       position: relative;
       width: 100%;
       aspect-ratio: 2.8/1;
+      overflow: hidden;
+      border-radius: 5px;
       img {
         width: 100%;
         height: 100%;
-        border-radius: 5px;
       }
       .icon-bofang {
         position: absolute;
@@ -198,6 +232,29 @@ export default {
   .fade-enter,
   .fade-leave-to {
     opacity: 0;
+  }
+}
+.blurImg {
+  position: relative;
+  .date {
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: 0;
+    bottom: 0;
+    margin: auto;
+    background-color: rgba(111, 111, 111, 0.4);
+    backdrop-filter: blur(2px);
+    color: #fff;
+    font-size: 40px;
+    font-weight: bold;
+    text-align: center;
+    span {
+      position: absolute;
+      left: 50%;
+      top: 50%;
+      transform: translate(-50%, -50%);
+    }
   }
 }
 </style>

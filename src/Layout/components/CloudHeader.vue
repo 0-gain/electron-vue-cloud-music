@@ -1,17 +1,20 @@
 <template>
-  <div id="header" :class="{ active: isVisible }">
-    <div class="logo" :class="{ visible: isVisible }">
+  <div id="header">
+    <div class="logo">
       <img :src="logo" alt="" />
     </div>
     <div class="search_wrapper">
-      <i class="el-icon-arrow-left" @click="$router.back()"></i>
+      <i class="el-icon-arrow-left" @click="$router.back(-1)"></i>
       <i class="el-icon-arrow-right" @click="$router.back(1)"></i>
 
       <div class="search" @click="clickSearch">
-        <i class="iconfont searchIcon">&#xe6e1;</i>
-        <el-input v-model="searchWord" placeholder="搜索"></el-input>
+        <i class="iconfont icon-search"></i>
+        <el-input
+          v-model="searchWord"
+          :placeholder="defaultKeyword"
+          v-on:keyup.enter.native="onSubmit(searchWord || defaultKeyword)"
+        ></el-input>
       </div>
-      <i class="iconfont">&#xe971;</i>
 
       <!-- 隐藏层 -->
       <div class="searchHot" v-show="isShowSearchHot">
@@ -20,7 +23,7 @@
           class="search-item"
           v-for="(s, index) in searchHotData"
           :key="index"
-          @click="search(s.searchWord)"
+          @click="onSubmit(s.searchWord)"
         >
           <div class="index" :class="{ topThree: index <= 2 }">
             {{ index + 1 }}
@@ -37,26 +40,103 @@
           </div>
         </div>
       </div>
+
+      <div class="searchSuggest" v-show="isShowSearchSuggest">
+        <template v-if="!SearchSuggest.order">
+          <div class="title">
+            <i class="iconfont icon-search"></i>
+            猜你想搜
+          </div>
+          <div class="item" @click="onSubmit(searchWord)">
+            {{ searchWord }}
+          </div>
+        </template>
+        <!-- 单曲 -->
+        <div class="songs" v-show="SearchSuggest.songs">
+          <div class="title">
+            <i class="iconfont icon-014-music"></i>
+            单曲
+          </div>
+          <div
+            class="item"
+            v-for="(s, index) in SearchSuggest.songs"
+            :key="index"
+            @click="playMusic(s)"
+          >
+            {{ s.name }}-{{ s.artists[0]?.name }}
+          </div>
+        </div>
+
+        <!-- 歌手 -->
+        <div class="artists" v-show="SearchSuggest.artists">
+          <div class="title">
+            <i class="iconfont icon-user2"></i>
+            歌手
+          </div>
+          <div
+            class="item"
+            v-for="(a, index) in SearchSuggest.artists"
+            :key="index"
+            @click="goArtistDetail(a)"
+          >
+            {{ a.name }}
+          </div>
+        </div>
+
+        <!-- 专辑 -->
+        <div class="album" v-show="SearchSuggest.albums">
+          <div class="title">
+            <i class="iconfont icon-music"></i>
+            专辑
+          </div>
+          <div
+            class="item"
+            v-for="(a, index) in SearchSuggest.albums"
+            :key="index"
+            @click="goAlbumDetail(a)"
+          >
+            {{ a.name }} - {{ a.artist?.name }}
+          </div>
+        </div>
+
+        <!-- 歌单 -->
+        <div class="playlist" v-show="SearchSuggest.playlists">
+          <div class="title">
+            <i class="iconfont icon-yinleliebiao"></i>
+            歌单
+          </div>
+          <div
+            class="item"
+            v-for="(p, index) in SearchSuggest.playlists"
+            :key="index"
+            @click="goPlaylistDetail(p)"
+          >
+            {{ p.name }}
+          </div>
+        </div>
+      </div>
     </div>
 
     <!-- 遮罩层 -->
     <div
       class="mask"
-      v-if="isShowSearchHot"
-      @click="isShowSearchHot = false"
+      v-if="isShowSearchHot || isShowQrCode"
+      @click="handleHidden"
     ></div>
 
     <ul class="login">
-      <li @click="checkLoginStatus" :class="{ visible: isVisible }">
-        <div class="user" v-if="!profileInfo.avatarUrl">
+      <li @click="checkLoginStatus">
+        <div class="user" v-if="!uid">
           <i class="iconfont">&#xe682;</i>
           <span>未登录 <i class="iconfont">&#xe688;</i></span>
         </div>
         <div class="userInfo" v-else>
-          <img :src="profileInfo.avatarUrl" alt="" />
-          <span
-            >{{ profileInfo.nickname }} <i class="iconfont">&#xe688;</i></span
-          >
+          <img
+            @click="$router.push({ path: '/person', query: { id: uid } })"
+            :src="profile.avatarUrl"
+            alt=""
+          />
+          <span>{{ profile.nickname }} <i class="iconfont">&#xe688;</i></span>
         </div>
       </li>
       <li><i class="iconfont">&#xe656;</i></li>
@@ -79,7 +159,7 @@
     <div class="qrcode" ref="qrcode" v-show="isShowQrCode">
       <div class="qrcode-content">
         <h2>扫码登录</h2>
-        <img :src="qrImg" alt="" />
+        <img v-lazy="qrImg" alt="" />
         <p>使用网易云音乐APP扫码登录</p>
       </div>
 
@@ -89,25 +169,30 @@
 </template>
 
 <script>
+import { mapState } from "vuex";
 export default {
   name: "CloudTitle",
   data() {
     return {
       logo: require("@/assets/images/logo.png"),
+      // 搜索关键词
       searchWord: "",
+      // 默认搜索关键词
+      defaultKeyword: "搜索",
       qrImg: null, //二维码图片
-      isShowQrCode: false, //是否二维码
-      profileInfo: {}, //用户信息
-      uid: null, //用户id
       // 搜索榜数据
       searchHotData: [],
       // 是否显示热搜榜
       isShowSearchHot: false,
+      // 是否显示搜素建议
+      isShowSearchSuggest: false,
+      // 搜素建议
+      SearchSuggest: {},
     };
   },
-  props: ["isVisible"],
   mounted() {
-    this.loginStatus(localStorage.getItem("cookie"));
+    this.$store.dispatch("user/loginStatus", localStorage.getItem("COOKIE"));
+    this.getSearch_default();
   },
   methods: {
     minimizeWin() {
@@ -123,96 +208,121 @@ export default {
     // 检查登录状态
     checkLoginStatus() {
       // 检查当前的cookie是否有数据
-      const cookie = localStorage.getItem("cookie");
+      const cookie = localStorage.getItem("COOKIE");
       if (cookie) {
         return;
       } else {
-        this.toLogin();
+        this.createQr();
       }
     },
 
-    // 登录
-    async toLogin() {
-      let timer;
-      // const cookie = localStorage.getItem("cookie");
-      // this.loginStatus(cookie);
-
-      // 生成key
-      const res = await this.$API.user.reqQr_key();
-      if (res.code === 200) {
-        let key = res.data.unikey;
-
-        // 生成二维码
-        const res2 = await this.$API.user.reqQr_create(key);
-        if (res2.code === 200) {
-          this.qrImg = res2.data.qrimg;
-          this.isShowQrCode = true;
-          // 确认二维码状态
-          timer = setInterval(async () => {
-            const statusRes = await this.checkStatus(key);
-            if (statusRes.code === 800) {
-              this.$message({
-                message: "二维码已过期，请重新获取",
-                type: "warning",
-                offset: 100,
-              });
-              clearInterval(timer);
-            }
-            if (statusRes.code === 803) {
-              clearInterval(timer);
-              this.$message({
-                message: "授权登录成功",
-                type: "success",
-                offset: 100,
-              });
-              this.isShowQrCode = false;
-              await this.loginStatus(statusRes.cookie);
-              // 存储cookie
-              localStorage.setItem("cookie", statusRes.cookie);
-            }
-          }, 3000);
-        }
-      }
-    },
-
-    // 获取扫码状态
-    async checkStatus(key) {
-      const res = await this.$API.user.reqQr_checkStatus(key);
-      return res;
-    },
-
-    // 获取登录状态
-    async loginStatus(cookie = "") {
-      const res = await this.$API.user.loginStatus(cookie);
-      if (res.data.code === 200) {
-        this.profileInfo = res.data.profile;
-        this.uid = res.data.account.id;
-
-        // 存储用户的uid
-        this.$store.commit('user/USER_ID',this.uid)
-        // 获取用户的所有信息
-        this.$store.dispatch("user/getUserAllData", this.uid);
-      }
+    // 生成二维码
+    async createQr() {
+      this.$store
+        .dispatch("user/getQr_create")
+        .then((res) => (this.qrImg = this.$store.state.user.qrimg));
     },
 
     // 获取搜索排行榜
     async getSearchHot() {
       const result = await this.$API.search.reqSearchHot();
       if (result.code === 200) {
+        this.isShowSearchHot = true;
+        this.isShowSearchSuggest = false;
         this.searchHotData = result.data;
       }
     },
 
-    // 点击搜索
-    clickSearch() {
-      this.isShowSearchHot = true;
-      this.getSearchHot();
+    // 默认搜索关键词
+    async getSearch_default() {
+      const result = await this.$API.search.reqSearch_default();
+      if (result.code === 200) {
+        this.defaultKeyword = result.data.showKeyword;
+      }
+    },
+
+    // 搜素建议
+    async getSearchSuggest(keywords, type) {
+      const result = await this.$API.search.reqSearchSuggest(keywords, type);
+      if (result.code === 200) {
+        this.isShowSearchSuggest = true;
+        this.isShowSearchHot = false;
+        this.SearchSuggest = result.result;
+      }
+    },
+
+    // 处理隐藏
+    handleHidden() {
+      if (this.isShowQrCode) {
+        // 隐藏二维码
+        this.$store.commit("user/UPDATE_QR_CORE", false);
+        return;
+      }
+
+      this.isShowSearchHot = false;
+      this.isShowSearchSuggest = false;
     },
 
     // 点击搜索
-    search(keywords) {
+    clickSearch() {
+      if (this.searchWord) {
+        this.getSearchSuggest(this.searchWord);
+      } else {
+        this.getSearchHot();
+      }
+    },
+
+    // 回车搜素
+    onSubmit(keywords) {
+      if (!this.searchWord) this.searchWord = keywords;
+      // 存储关键词
+      this.$store.commit("search/UPDATE_SEARCH_KEYWORDS", keywords);
       this.isShowSearchHot = false;
+      this.isShowSearchSuggest = false;
       this.$router.push({ path: "/search/song", query: { keywords } });
+    },
+
+    // 搜素建议，单曲点击播放
+    playMusic(data) {
+      this.isShowSearchHot = false;
+      this.$store.commit("playList/GETSONGDETAIL", data);
+      this.$store.commit("playList/UPDATEMUSICID", data.id);
+    },
+
+    // 歌手详情页
+    goArtistDetail(data) {
+      this.isShowSearchHot = false;
+      this.$router.push({ path: "/singerDetail", query: { id: data.id } });
+    },
+
+    // 专辑详情页
+    goAlbumDetail({ id }) {
+      this.isShowSearchHot = false;
+      this.$router.push({ path: "/album", query: { id } });
+    },
+
+    // 歌单详情页
+    goPlaylistDetail({ id }) {
+      this.isShowSearchHot = false;
+      this.$router.push({ path: "/playListDetail", query: { id } });
+    },
+  },
+  computed: {
+    ...mapState({
+      isShowQrCode: (state) => state.user.isShowQrCode,
+      profile: (state) => state.user.profile,
+      uid: (state) => state.user.uid,
+    }),
+  },
+  watch: {
+    // 监听关键词
+    searchWord(val) {
+      if (val == this.$store.state.search.keywords) return;
+      if (val) {
+        this.getSearchSuggest(val);
+      } else {
+        this.searchHotData();
+      }
     },
   },
 };
@@ -240,9 +350,6 @@ export default {
     height: 100%;
     img {
       transform: scale(0.5) translateX(-110px) translateY(-5px);
-    }
-    &.visible {
-      visibility: hidden;
     }
   }
   .search_wrapper {
@@ -272,14 +379,17 @@ export default {
         -webkit-app-region: no-drag;
         color: #fff;
       }
-      .searchIcon {
+      .icon-search {
         position: absolute;
         padding: 0;
         font-size: 18px;
         background-color: transparent;
+        cursor: pointer;
+        z-index: 1;
       }
     }
-    .searchHot {
+    .searchHot,
+    .searchSuggest {
       position: absolute;
       margin-top: 10px;
       width: 350px;
@@ -291,6 +401,8 @@ export default {
       box-shadow: 0px 0px 5px 0px #dddddd;
       z-index: 10;
       cursor: pointer;
+    }
+    .searchHot {
       .title {
         margin: 10px 0 10px 20px;
         color: #909399;
@@ -347,6 +459,31 @@ export default {
       }
       .topThree {
         color: rgb(236, 65, 65) !important;
+      }
+    }
+    .searchSuggest {
+      color: #333;
+      font-size: 12px;
+      .title {
+        color: @minor-color;
+        font-size: 14px;
+        margin: 10px;
+        i {
+          margin-left: 0;
+          padding: 0;
+          background-color: transparent;
+          font-size: 16px;
+        }
+      }
+      .item {
+        line-height: 30px;
+        padding-left: 30px;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        &:hover {
+          background-color: @bg-deep-color-hover;
+        }
       }
     }
   }
@@ -406,11 +543,6 @@ export default {
             font-size: 10px;
             margin-left: 5px;
           }
-        }
-      }
-      &:first-child {
-        &.visible {
-          visibility: hidden;
         }
       }
     }

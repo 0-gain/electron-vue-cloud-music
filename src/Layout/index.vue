@@ -3,8 +3,6 @@
     <CloudHeader />
     <Sidebar/>
     <app-main />
-    <!-- <Footer class="footer" /> -->
-    <!-- <music-detail-card class="musicDetailCard"></music-detail-card> -->
   </div>
 </template>
 
@@ -13,6 +11,10 @@ import { Sidebar, CloudHeader, AppMain, Footer } from "./components";
 import MusicDetailCard from "@/components/Test";
 export default {
   name: "Layout",
+  mounted(){
+    // 从localStorage中获取数据
+    this.$store.state.playList.recentList = JSON.parse(localStorage.getItem("history_list") || "[]")
+  },
   components: {
     Sidebar,
     CloudHeader,

@@ -1,0 +1,53 @@
+<template>
+  <div class="person-Wrapper">
+    <div class="person-info">
+      <div class="avatar">
+        <img src="" alt="">
+      </div>
+      <div class="info">
+        <div class="nickname"></div>
+        <div class="level"></div>
+        <div class="counts"></div>
+        <div class="location"></div>
+        <div class="society"></div>
+        <div class="des"></div>
+      </div>
+    </div>
+  </div>
+</template>
+
+<script>
+export default {
+  name: "Person",
+  data() {
+    return {
+        userDetail:{
+          // 头像
+          avatarUrl:'',
+          name:''
+        }
+    };
+  },
+  mounted() {
+    this.getUser_detail(this.$route.query.id)
+  },
+  methods: {
+    // 获取用户详情
+    async getUser_detail(id) {
+      const result = await this.$API.user.reqUser_detail(id);
+      console.log(result);
+    },
+
+    // 获取歌手详情
+    async getArtistDetail(id) {
+      const result = await this.$API.singer.reqArtistDetail(id);
+      if (result.code === 200) {
+        // this.userDetail = result.data.user;
+        console.log(this.userDetail);
+      }
+    },
+  },
+};
+</script>
+
+<style></style>

@@ -31,7 +31,7 @@
             <i class="iconfont icon-24gl-play"></i>
             <span>{{ (n.playCount || n.playTime) | numberFormat }}</span>
           </span>
-          <span class="durationms">
+          <span class="durationms" v-show="isShowDurationms">
             {{ n.durationms | moment("mm:ss") }}
           </span>
         </div>
@@ -109,6 +109,13 @@ export default {
         return;
       },
     },
+    // 是否显示总时长
+    isShowDurationms:{
+      type: Boolean,
+      default() {
+        return false;
+      },
+    }
   },
   methods: {
     // 点击种类的自定义事件

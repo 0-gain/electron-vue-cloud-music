@@ -8,12 +8,15 @@
   >
     <!-- 发表评论 -->
     <div class="publish" v-if="isShowPublish">
-      <el-input type="textarea"></el-input>
+      <h4>
+        评论<span>(已有{{ totalCount }}条评论)</span>
+      </h4>
+      <el-input type="textarea" v-model="commentContent"></el-input>
       <div class="iconList">
         <span><i class="iconfont icon-xiaolian"></i></span>
         <span><i class="iconfont icon-aite"></i></span>
         <span><i class="iconfont icon-huatifuhao"></i></span>
-        <span>评论</span>
+        <span @click="handleComment(1)">评论</span>
       </div>
     </div>
 
@@ -41,12 +44,23 @@
           </div>
           <div class="otherInfo">
             <span class="createTime">{{
-              item.time | moment("YYYY年MM月DD日 HH:mm")
+              item.time | moment("YYYY年MM月DD日 HH:mm:ss")
             }}</span>
             <span class="operation">
-              <i class="iconfont icon-dianzan"
-                ><span class="likedCount">{{ item.likedCount }}</span></i
+              <span
+                class="dianzan"
+                @click="handleDianzan(item, 1)"
+                v-if="!item.liked"
               >
+                <i class="iconfont icon-dianzan"></i>
+                <span class="likedCount">{{ item.likedCount }}</span>
+              </span>
+
+              <span class="dianzan" @click="handleDianzan(item, 0)" v-else>
+                <i class="iconfont icon-dianzan_kuai"></i>
+                <span class="likedCount">{{ item.likedCount }}</span>
+              </span>
+
               <i class="iconfont icon-fenxiang1"></i>
               <i class="iconfont icon-pinglun"></i>
             </span>
@@ -78,11 +92,27 @@
               item.time | moment("YYYY年MM月DD日 HH:mm")
             }}</span>
             <span class="operation">
-              <i class="iconfont icon-dianzan"
-                ><span class="likedCount">{{ item.likedCount }}</span></i
+              <span
+                class="delete"
+                @click="handleComment(0, item)"
+                v-if="item.user?.userId === $store.state.user.uid"
+                >删除</span
               >
+              <span
+                class="dianzan"
+                @click="handleDianzan(item, 1)"
+                v-if="!item.liked"
+              >
+                <i class="iconfont icon-dianzan"></i>
+                <span class="likedCount">{{ item.likedCount }}</span>
+              </span>
+
+              <span class="dianzan" @click="handleDianzan(item, 0)" v-else>
+                <i class="iconfont icon-dianzan_kuai"></i>
+                <span class="likedCount">{{ item.likedCount }}</span>
+              </span>
               <i class="iconfont icon-fenxiang1"></i>
-              <i class="iconfont icon-pinglun"></i>
+              <i class="iconfont icon-pinglun" @click="handleComment(2,item)"></i>
             </span>
           </div>
         </div>
@@ -124,14 +154,14 @@ export default {
       totalCount: 0,
       // 加载
       loading: true,
+      // 评论内容
+      commentContent: "",
     };
   },
   props: {
     type: {
       type: String,
-      default() {
-        return;
-      },
+      default: "",
     },
     // 是否显示评论框
     isShowPublish: {
@@ -140,12 +170,22 @@ export default {
         return true;
       },
     },
+    id: {
+      type: String,
+      default: "",
+    },
   },
   mounted() {
-    this.getAllComment(this.$route.query.id, this.type, this.pageSize);
-    this.getAllHotComment(this.$route.query.id, this.type, this.pageSize);
+    this.InitData();
   },
+
   methods: {
+    // 初始化数据
+    InitData() {
+      this.getAllComment(this.id, this.type, this.pageSize);
+      this.getAllHotComment(this.id, this.type, this.pageSize);
+    },
+
     // 获取所有的评论
     async getAllComment(id, type, pageSize, pageNo, cursor) {
       const result = await this.$API.mv.reqAllComment(
@@ -173,14 +213,103 @@ export default {
       }
     },
 
+    // 点赞
+    async handleDianzan(item, flag) {
+      if (!this.$store.state.user.uid) {
+        this.$message({
+          message: "需要登录才可以点赞",
+          type: "error",
+          offset: 100,
+        });
+        return;
+      }
+      // 评论点赞
+      const res = await this.$API.mv.reqCommentLike(
+        this.id,
+        item.commentId,
+        flag,
+        this.type
+      );
+      if (res.code === 200) {
+        this.InitData();
+      } else {
+        this.$message({
+          message: "点赞失败,请稍后在试",
+          type: "error",
+          offset: 100,
+        });
+      }
+    },
+
+    // 发表or删除评论
+    async getPublishOrDeleteComment({ t, type, id, content, commentId }) {
+      const res = await this.$API.mv.reqPublishOrDeleteComment(
+        t,
+        type,
+        id,
+        content,
+        commentId
+      );
+      if (res.code === 200) {
+        this.InitData();
+        this.commentContent = "";
+      } else {
+        this.$message({
+          message: "操作失败,请稍后在试",
+          type: "error",
+          offset: 100,
+        });
+      }
+    },
+    
+    // 处理评论
+    handleComment(flag, item) {
+      if (!this.$store.state.user.uid) {
+        this.$message({
+          message: "需要登录才可以操作",
+          type: "error",
+          offset: 100,
+        });
+        return;
+      }
+      const { type, id } = this;
+      const t = flag;
+      let commentId
+      if (flag !== 1) {
+        commentId = item.commentId;
+      }
+      const content = this.commentContent;
+      switch (flag) {
+        // 代表删除
+        case 0:
+          this.getPublishOrDeleteComment({ t, type, id, commentId });
+          break;
+        // 发送
+        case 1:
+          this.getPublishOrDeleteComment({ t, type, id, content });
+          break;
+        // 回复
+        case 2:
+          this.getPublishOrDeleteComment({ t, type, id, content, commentId });
+          break;
+      }
+    },
+
     //  评论翻页
     handleCurrentChange(val) {
       this.pageNo = val;
-      const { type, pageSize, cursor } = this;
-      this.getAllComment(this.$route.query.id, type, pageSize, val, cursor);
+      const { id, type, pageSize, cursor } = this;
+      this.getAllComment(id, type, pageSize, val, cursor);
 
       // 触发自定义事件,使页面滚动
       this.$emit("changeScrollTop", "scroll");
+    },
+  },
+  watch: {
+    // 监听id的变化
+    id(id) {
+      this.getAllComment(id, this.type, this.pageSize);
+      this.getAllHotComment(id, this.type, this.pageSize);
     },
   },
 };
@@ -190,6 +319,14 @@ export default {
 .comment-wrapper {
   padding-bottom: 50px;
   .publish {
+    h4 {
+      text-align: left;
+      span {
+        color: @minor-color;
+        font-size: 12px;
+        font-weight: normal;
+      }
+    }
     .iconList {
       margin-top: 10px;
       text-align: left;
@@ -249,18 +386,31 @@ export default {
           color: #909399;
           .operation {
             float: right;
-            i {
-              cursor: pointer;
-              margin-left: 20px;
+            .dianzan {
               .likedCount {
                 font-size: 12px;
               }
+              .icon-dianzan,
+              .icon-dianzan_kuai {
+                font-size: 20px;
+              }
+              .icon-dianzan_kuai {
+                color: rgb(236, 65, 65);
+                &:hover {
+                  color: rgb(236, 65, 65) !important;
+                }
+              }
+            }
+            i,
+            span {
+              cursor: pointer;
+
               &:hover {
                 color: #333;
               }
             }
-            .icon-dianzan {
-              font-size: 20px;
+            i {
+              margin-left: 20px;
             }
           }
         }

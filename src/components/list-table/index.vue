@@ -2,10 +2,10 @@
   <div class="rank-item">
     <div class="rank-cover">
       <div
-        v-if="isShowCover"
+        v-show="showType === 'singerIndex' || showType === 'rank'"
         class="coverImg"
-        @mouseenter="isShowIcon = true && isRanking"
-        @mouseleave="isShowIcon = false && isRanking"
+        @mouseenter="isShowPlay = true"
+        @mouseleave="isShowPlay = false"
         @click="
           officialListDetailItem.artistTopSong
             ? ''
@@ -17,7 +17,7 @@
           alt=""
         />
         <transition name="fade">
-          <i v-show="isShowIcon" class="iconfont icon-bofangqi-bofang"></i>
+          <i v-show="isShowPlay" class="iconfont icon-bofangqi-bofang"></i>
         </transition>
       </div>
     </div>
@@ -28,15 +28,26 @@
         <i class="el-icon-folder-add"></i>
       </div>
       <table>
-        <thead v-if="isShowThead">
+        <thead v-show="showType !== 'singerIndex' && showType !== 'rank'">
           <tr>
             <th></th>
-            <th></th>
+            <th v-show="showType != 'rank' && showType != 'recent'"></th>
             <th>音乐标题</th>
-            <th>歌手</th>
-            <th>专辑</th>
-            <th>时长</th>
-            <th v-if="isShowProgress">热度</th>
+            <th v-show="showType != 'singerIndex'">歌手</th>
+            <th
+              v-show="
+                showType != 'rank' &&
+                showType != 'singerIndex' &&
+                showType != 'recent'
+              "
+            >
+              专辑
+            </th>
+            <th v-show="showType != 'rank' && showType != 'recent'">时长</th>
+            <th v-show="showType === 'searchSong' || showType === 'albumList'">
+              热度
+            </th>
+            <th v-show="showType === 'recent'">播放时间</th>
           </tr>
         </thead>
         <tbody>
@@ -51,29 +62,35 @@
               officialListDetailItem.songs.slice(0, 10)) ||
             officialListDetailItem.totalSongs"
             :key="index"
-            @dblclick="clickRow(track.id, officialListDetailItem)"
+            @dblclick="clickRow(track.id, officialListDetailItem, index)"
+            :class="{ active: currentItem === index }"
           >
             <td class="index">
               <span v-if="track.id == $store.state.playList.musicId">
                 <i
                   class="iconfont icon-volumeFull"
-                  v-if="isPlay && !$store.state.playList.isPlay"
+                  v-if="!$store.state.playList.isPlay"
                 ></i>
                 <i class="iconfont icon-volumeHighFull" v-else></i>
               </span>
 
-              <span v-else>{{ index + 1 }}</span>
+              <span v-else>{{ index | indexFormat() }}</span>
             </td>
-            <td class="icon">
+
+            <td
+              class="icon"
+              v-show="showType != 'rank' && showType != 'recent'"
+            >
               <i class="iconfont icon-aixin2"></i>
               <i class="iconfont icon-xiazai1"></i>
             </td>
+
             <td class="name">
               <span>
                 {{ track.name }}
-                <span class="alia" v-if="track.alia.length">
+                <!-- <span class="alia" v-if="track.alia.length">
                   ({{ track.alia[0] }})
-                </span>
+                </span> -->
                 <p class="type" v-if="track.fee == 1">VIP</p>
                 <p class="type" v-if="track.fee == 1">试听</p>
                 <p class="mv" v-if="track.mv">
@@ -86,7 +103,7 @@
               </span>
             </td>
             <!-- 显示歌曲歌手得名字 -->
-            <td class="ar">
+            <td class="ar" v-show="showType != 'singerIndex'">
               <span>
                 <span v-for="(a, index) in track.ar" :key="index">
                   <span>{{ a.name }}</span>
@@ -96,15 +113,33 @@
             </td>
 
             <!-- 显示专辑 -->
-            <td class="album">
+            <td
+              class="album"
+              v-show="
+                showType != 'rank' &&
+                showType != 'singerIndex' &&
+                showType != 'recent'
+              "
+            >
               <span>{{ track.al.name }}</span>
             </td>
+
             <!-- 显示歌曲时间 -->
-            <td class="dt">{{ track.dt | moment("mm:ss") }}</td>
+            <td class="dt" v-show="showType != 'rank' && showType != 'recent'">
+              {{ track.dt | moment("mm:ss") }}
+            </td>
 
             <!-- 歌曲热度 -->
-            <td class="pop" v-if="isShowProgress">
+            <td
+              class="pop"
+              v-show="showType === 'searchSong' || showType === 'albumList'"
+            >
               <el-progress :percentage="track.pop"></el-progress>
+            </td>
+
+            <!-- 播放时间 -->
+            <td class="playTime" v-show="showType === 'recent'">
+              {{ track.playTime | handlePlayTime() }}
             </td>
           </tr>
         </tbody>
@@ -126,7 +161,9 @@ export default {
   data() {
     return {
       // 是否显示播放icon
-      isShowIcon: false,
+      isShowPlay: false,
+      // 当前播放的索引
+      currentItem: -1,
     };
   },
   props: {
@@ -143,11 +180,11 @@ export default {
         return "";
       },
     },
-    // 控制显示rank组件该显示得
-    isRanking: {
-      type: Boolean,
+
+    showType: {
+      type: String,
       default() {
-        return false;
+        return;
       },
     },
     // 控制显示全部歌曲
@@ -173,37 +210,6 @@ export default {
         return;
       },
     },
-    // 是否显示封面
-    isShowCover: {
-      type: Boolean,
-      default() {
-        return true;
-      },
-    },
-
-    // 是否正在播放
-    isPlay: {
-      type: Boolean,
-      default() {
-        return false;
-      },
-    },
-
-    // 是否显示表格标题
-    isShowThead: {
-      type: Boolean,
-      default() {
-        return false;
-      },
-    },
-
-    // 是否显示热度
-    isShowProgress: {
-      type: Boolean,
-      default() {
-        return false;
-      },
-    },
   },
 
   methods: {
@@ -213,7 +219,8 @@ export default {
       this.$emit("checkTotalSong", { id, listId });
     },
     // 双击某一行音乐
-    clickRow(id, tracks) {
+    clickRow(id, tracks, index) {
+      this.currentItem = index;
       let songInfo = [];
       if (tracks.hasOwnProperty("tracks")) {
         songInfo = tracks.tracks;
@@ -221,11 +228,13 @@ export default {
         songInfo = tracks.artistTopSong;
       } else if (tracks.hasOwnProperty("songs")) {
         songInfo = tracks.songs;
-      }else if(tracks.hasOwnProperty('totalSongs')){
-        songInfo = tracks.totalSongs
+      } else if (tracks.hasOwnProperty("totalSongs")) {
+        songInfo = tracks.totalSongs;
       }
       // todo 更新播放列表
       this.$store.commit("playList/GETSONGDETAIL", songInfo);
+      // todo 更新抽屉播放列表
+      this.$store.commit("playList/UPDATEDRAWERLIST", songInfo);
       // todo 将当前的id存入vuex中
       this.$store.commit("playList/UPDATEMUSICID", id);
     },
@@ -324,7 +333,7 @@ export default {
           font-size: 12px;
           height: 40px;
           .index {
-            width: 30px;
+            width: 50px;
             text-align: center;
             font-size: 14px;
             i {
@@ -411,8 +420,11 @@ export default {
             color: red;
           }
           &:hover {
-            background-color: #f4f4f4;
+            background-color: @bg-deep-color-hover;
           }
+        }
+        .active {
+          background-color: @bg-deep-color-hover !important;
         }
       }
     }

@@ -7,15 +7,15 @@
           <el-table :data="musicAllList" stripe @row-dblclick="clickRow">
             <el-table-column
               label=""
-              width="40"
-              style="width: 100%"
+              width="50"
               type="index"
+              style="text-align: right"
               :index="handleIndex"
             >
               <template slot-scope="{ row, $index }">
                 <span v-if="row.id == $store.state.playList.musicId">
                   <i
-                    v-if=" $store.state.playList.isPlay"
+                    v-if="$store.state.playList.isPlay"
                     class="iconfont icon-volumeHighFull"
                   ></i>
                   <i v-else class="iconfont icon-volumeFull"></i>
@@ -24,10 +24,13 @@
               </template>
             </el-table-column>
             <el-table-column label="操作" width="60px">
-              <i class="iconfont icon-aixin2"></i>
-              <i class="iconfont icon-xiazai1"></i>
+              <template slot-scope="{ row }">
+                <i class="iconfont icon-aixin2" v-if="!row.isLike"></i>
+                <i class="iconfont icon-aixin3" v-else></i>
+                <i class="iconfont icon-xiazai1"></i>
+              </template>
             </el-table-column>
-            <el-table-column label="标题" prop="name" width="450">
+            <el-table-column label="标题" prop="name" class="name">
               <template slot-scope="{ row }">
                 <div
                   class="musicName"
@@ -38,11 +41,13 @@
                 <p v-show="row.fee === 1">试听</p>
               </template>
             </el-table-column>
-            <el-table-column label="歌手" prop="ar[0].name"> </el-table-column>
-            <el-table-column label="专辑" prop="al.name"> </el-table-column>
+            <el-table-column label="歌手" prop="ar[0].name" min-width="50">
+            </el-table-column>
+            <el-table-column label="专辑" prop="al.name" min-width="60">
+            </el-table-column>
             <el-table-column label="时间" width="80">
               <template slot-scope="{ row }">
-                {{ row.dt | time }}
+                {{ row.dt | moment("mm:ss") }}
               </template>
             </el-table-column>
           </el-table>
@@ -52,117 +57,7 @@
           :label="`评论(${playlistInfo.commentCount})`"
           name="second"
         >
-          <div class="comment-wrapper" v-loading="loading">
-            <!-- 发表评论 -->
-            <div class="publish">
-              <el-input type="textarea"></el-input>
-              <div class="iconList">
-                <span><i class="iconfont icon-xiaolian"></i></span>
-                <span><i class="iconfont icon-aite"></i></span>
-                <span><i class="iconfont icon-huatifuhao"></i></span>
-                <span>评论</span>
-              </div>
-            </div>
-
-            <!-- 热评 -->
-            <div
-              class="comments-content"
-              v-if="page === 1 && hotComments.length != 0"
-            >
-              <h5>精彩评论</h5>
-              <div
-                class="comments-item"
-                v-for="(item, index) in hotComments"
-                :key="index"
-              >
-                <el-avatar
-                  :src="item.user.avatarUrl"
-                  icon="el-icon-user-solid"
-                  size="medium"
-                ></el-avatar>
-                <div class="cntWrap">
-                  <div class="des">
-                    <span class="name">{{ item.user.nickname }}:</span>
-                    <span class="comment">{{ item.content }}</span>
-                  </div>
-                  <div class="beReplied" v-if="item.beReplied.length">
-                    <span class="name"
-                      >@{{ item.beReplied[0].user.nickname }}:</span
-                    >
-                    <span class="comment">{{ item.beReplied[0].content }}</span>
-                  </div>
-                  <div class="otherInfo">
-                    <span class="createTime"
-                      >{{ item.timeStr }} {{ item.time | time }}</span
-                    >
-                    <span class="operation">
-                      <i class="iconfont icon-dianzan"
-                        ><span class="likedCount">{{
-                          item.likedCount
-                        }}</span></i
-                      >
-                      <i class="iconfont icon-fenxiang1"></i>
-                      <i class="iconfont icon-pinglun"></i>
-                    </span>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <!-- 最新评论 -->
-            <div class="comments-content">
-              <h5>最新评论({{ commentTotal }})</h5>
-              <div
-                class="comments-item"
-                v-for="(item, index) in comments"
-                :key="index"
-              >
-                <el-avatar
-                  :src="item.user.avatarUrl"
-                  icon="el-icon-user-solid"
-                  size="medium"
-                ></el-avatar>
-                <div class="cntWrap">
-                  <div class="des">
-                    <span class="name">{{ item.user.nickname }}:</span>
-                    <span class="comment">{{ item.content }}</span>
-                  </div>
-                  <div class="beReplied" v-if="item.beReplied.length">
-                    <span class="name"
-                      >@{{ item.beReplied[0].user.nickname }}:</span
-                    >
-                    <span class="comment">{{ item.beReplied[0].content }}</span>
-                  </div>
-                  <div class="otherInfo">
-                    <span class="createTime"
-                      >{{ item.timeStr }} {{ item.time | time }}</span
-                    >
-                    <span class="operation">
-                      <i class="iconfont icon-dianzan"
-                        ><span class="likedCount">{{
-                          item.likedCount
-                        }}</span></i
-                      >
-                      <i class="iconfont icon-fenxiang1"></i>
-                      <i class="iconfont icon-pinglun"></i>
-                    </span>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <!-- 分页器 @size-change="handleSizeChange" -->
-          <el-pagination
-            style="text-align: center"
-            :current-page="page"
-            :page-size="commentLimit"
-            layout="prev, pager, next"
-            :total="commentTotal"
-            background
-            @current-change="handleCurrentChange"
-          >
-          </el-pagination>
+          <comment :id='$route.query.id' type='2'/>
         </el-tab-pane>
         <!-- 收藏者 -->
         <el-tab-pane label="收藏者" name="third">
@@ -197,6 +92,7 @@
 
 <script>
 import UserItem from "@/components/UserItem";
+import comment from '@/components/Comment'
 import { mapState } from "vuex";
 export default {
   name: "PlaylistDetail",
@@ -247,7 +143,8 @@ export default {
       this.trackIds = result.playlist.trackIds.map((item) => {
         return Number(item.id);
       });
-      // * 获取歌单歌曲详情
+
+      // todo 获取歌单歌曲详情
       this.$store.dispatch("playList/getSongDetail", this.trackIds.join(","));
     },
 
@@ -303,6 +200,9 @@ export default {
       this.songId = row.id;
       // todo 将当前的id存入vuex中
       this.$store.commit("playList/UPDATEMUSICID", row.id);
+
+      // todo 更新抽屉播放列表
+      this.$store.commit("playList/UPDATEDRAWERLIST", this.musicAllList);
     },
     // 处理index
     handleIndex(index) {
@@ -322,7 +222,13 @@ export default {
       },
     }),
   },
-  components: { UserItem },
+  watch: {
+    $route(to, from) {
+      this.initData();
+    },
+  },
+
+  components: { UserItem,comment },
 };
 </script>
 
@@ -545,6 +451,9 @@ export default {
               .icon-xiazai1 {
                 padding-left: 5px;
               }
+              .icon-aixin3 {
+                color: rgb(236, 65, 65);
+              }
               .icon-24gl-volumeZero {
                 color: rgb(236, 65, 65);
                 margin-left: 8px;
@@ -567,22 +476,23 @@ export default {
         cursor: pointer;
       }
       .el-tabs__content .el-tab-pane .el-table .cell .musicName {
+        display: inline-block;
+        max-width: 19vw;
         overflow: hidden;
         text-overflow: ellipsis;
         white-space: nowrap;
-        float: left;
         color: #333;
         &.active {
           color: rgb(236, 65, 65);
         }
       }
       .el-tabs__content .el-tab-pane .el-table .cell p {
+        display: inline-block;
         font-size: 13px;
         transform: scale(0.7);
         height: 20px;
         line-height: 20px;
         width: 30px;
-        float: left;
         margin: 2px 0 0 10px;
         border: 1px solid rgb(236, 65, 65);
         border-radius: 5px;
@@ -594,6 +504,10 @@ export default {
       }
       .el-table_1_column_1 > .cell {
         text-align: right !important;
+      }
+      .el-table--scrollable-x .el-table__body-wrapper {
+        overflow: hidden;
+        overflow-x: hidden;
       }
       .comment-wrapper {
         .publish {
